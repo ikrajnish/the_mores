@@ -60,7 +60,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatsCard 
                 title="Total Revenue" 
-                value={`₹${metrics.totalRevenue.toLocaleString()}`} 
+                value={metrics?.totalRevenue ? `₹${metrics.totalRevenue.toLocaleString()}` : '₹0'} 
                 icon={DollarSign} 
                 trend="+12% from last month"
                 color="text-emerald-600"
@@ -68,7 +68,7 @@ export default function AdminDashboard() {
             />
             <StatsCard 
                 title="Today's Appointments" 
-                value={metrics.todaysAppointments} 
+                value={metrics?.todaysAppointments || 0} 
                 icon={Calendar} 
                 trend="4 pending confirmation"
                 color="text-blue-600"
@@ -76,15 +76,15 @@ export default function AdminDashboard() {
             />
              <StatsCard 
                 title="Total Members" 
-                value={Object.values(metrics.membershipCounts).reduce((a:any, b:any) => a + b, 0)} 
+                value={metrics?.membershipCounts ? Object.values(metrics.membershipCounts).reduce((a:any, b:any) => a + b, 0) : 0} 
                 icon={Users} 
-                trend={`+${metrics.recentEnrollments} this week`}
+                trend={`+${metrics?.recentEnrollments || 0} this week`}
                 color="text-purple-600"
                 bgColor="bg-purple-100"
             />
              <StatsCard 
                 title="Low Stock Items" 
-                value={metrics.lowStockCount} 
+                value={metrics?.lowStockCount || 0} 
                 icon={Package} 
                 trend="Requires attention"
                 color="text-amber-600"
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-6 mt-4">
-                            {Object.entries(metrics.membershipCounts).map(([tier, count]: [string, any]) => (
+                            {metrics?.membershipCounts && Object.entries(metrics.membershipCounts).map(([tier, count]: [string, any]) => (
                                 <div key={tier} className="flex items-center justify-between">
                                     <div className="flex items-center">
                                         <div className={`w-3 h-3 rounded-full mr-3 ${
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {recentActivity.map((booking: any) => (
+                            {recentActivity?.map((booking: any) => (
                                 <tr key={booking._id} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4 font-medium text-slate-900">
                                         {booking.userId?.name || booking.userId?.phone || 'Guest'}

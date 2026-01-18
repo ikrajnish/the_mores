@@ -4,6 +4,7 @@ import connectDB from "@/lib/db";
 import Booking from "@/models/Booking";
 import User from "@/models/User";
 import Membership from "@/models/Membership";
+import Service from "@/models/Service";
 import { startOfDay, endOfDay, subDays } from "date-fns";
 
 export async function GET(req: NextRequest) {
