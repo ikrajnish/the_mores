@@ -18,6 +18,18 @@ const ProductSchema: Schema<IProduct> = new Schema(
       required: true,
       min: 0,
     },
+    image: {
+      type: String,
+      required: false,
+    },
+    description: {
+      type: String,
+      required: false,
+    },
+    brand: {
+      type: String,
+      required: false,
+    },
     stock: {
       type: Number,
       required: true,

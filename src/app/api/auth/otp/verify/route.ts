@@ -70,9 +70,12 @@ export async function POST(req: Request) {
       });
     }
 
-    // 3. Sign JWT (minimal payload)
+    // 3. Sign JWT (include essential info)
     const token = await signJWT({
       userId: user._id.toString(),
+      role: user.role,
+      email: user.phone, // using phone as email identifier for compatibility
+      name: user.name
     });
 
     // 4. Set cookie

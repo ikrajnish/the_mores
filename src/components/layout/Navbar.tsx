@@ -35,18 +35,28 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-purple-600",
-                  pathname === item.href ? "text-purple-600" : "text-slate-600 dark:text-slate-400"
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {user?.role === 'ADMIN' ? (
+               // Admin Links
+               <>
+                  <Link href="/admin" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Dashboard</Link>
+                  <Link href="/admin/bookings" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Bookings</Link>
+                  <Link href="/admin/users" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Users</Link>
+                  <Link href="/admin/services" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Services</Link>
+                  <Link href="/admin/finance" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Finance</Link>
+               </>
+            ) : (
+               // Customer Links
+               <>
+                  <Link href="/" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Home</Link>
+                  <Link href="/services" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Services</Link>
+                  <Link href="/products" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Products</Link>
+                  <Link href="/gallery" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Gallery</Link>
+                  <Link href="/memberships" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Memberships</Link>
+                  {user && (
+                    <Link href="/my-bookings" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">My Bookings</Link>
+                  )}
+               </>
+            )}
           </div>
 
           {/* User / Auth */}
@@ -59,9 +69,15 @@ export function Navbar() {
                        <Button variant="outline" size="sm">Admin</Button>
                      </Link>
                    )}
+                   <Link href="/profile">
+                     <Button variant="ghost" size="sm">Profile</Button>
+                   </Link>
+                   <Link href="/my-bookings">
+                     <Button variant="ghost" size="sm">Bookings</Button>
+                   </Link>
                    <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                     <UserIcon className="w-4 h-4" />
-                     <span>{user.phone}</span>
+                     <UserIcon className="w-4 h-4 ml-2" />
+                     {/* <span>{user.phone}</span> */}
                    </div>
                 </div>
               ) : (
@@ -111,6 +127,12 @@ export function Navbar() {
                            <Button variant="outline" size="sm" className="w-full">Admin Dashboard</Button>
                          </Link>
                        )}
+                       <Link href="/profile">
+                          <Button variant="ghost" size="sm" className="w-full justify-start">My Profile</Button>
+                       </Link>
+                       <Link href="/my-bookings">
+                           <Button variant="ghost" size="sm" className="w-full justify-start">My Bookings</Button>
+                       </Link>
                     </div>
                   ) : (
                     <Link href="/login">

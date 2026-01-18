@@ -18,12 +18,18 @@ export async function middleware(request: NextRequest) {
   }
 
   // 3. Logic
+  // B. Logic
   // A. Protect Admin Routes
   if (isAdminPath) {
     if (!user) {
+      console.log("Middleware: No user found for admin path, redirecting to login");
       return NextResponse.redirect(new URL('/login', request.url));
     }
+    
+    console.log("Middleware: Checking Admin Role. User:", JSON.stringify(user));
+    
     if (user.role !== 'ADMIN') {
+      console.log("Middleware: User is not ADMIN (role=" + user.role + "), redirecting to home");
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

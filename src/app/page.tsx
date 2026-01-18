@@ -69,7 +69,7 @@ export default async function Home() {
           {categories.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {categories.map((cat: any) => (
-                <Link key={cat._id.toString()} href={`/services?category=${cat._id}`} className="group">
+                <Link key={cat._id.toString()} href={`/services/${cat.name}`} className="group">
                   <div className="h-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-end transition-all hover:shadow-xl hover:scale-[1.02]">
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{cat.name}</h3>
                     <div className="flex items-center text-slate-500 text-sm opacity-0 group-hover:opacity-100 transition-opacity">

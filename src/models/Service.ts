@@ -4,6 +4,8 @@ export interface IService extends Document {
   name: string;
   duration: number; // in minutes
   categoryId: mongoose.Types.ObjectId;
+  image?: string;
+  shortDescription?: string;
 }
 
 const ServiceSchema: Schema<IService> = new Schema(
@@ -17,6 +19,14 @@ const ServiceSchema: Schema<IService> = new Schema(
       type: Number,
       required: true,
       min: 1,
+    },
+    image: {
+      type: String,
+      required: false,
+    },
+    shortDescription: {
+      type: String,
+      required: false,
     },
     categoryId: {
       type: Schema.Types.ObjectId,
