@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import Booking from "@/models/Booking";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -19,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (body.date) updateData.date = new Date(body.date);
         if (body.slot) updateData.slot = body.slot;
         
-        const booking = await Booking.findByIdAndUpdate(params.id, updateData, { new: true })
+        const booking = await Booking.findByIdAndUpdate(id, updateData, { new: true })
              .populate('userId', 'name phone')
              .populate('serviceId', 'name');
 

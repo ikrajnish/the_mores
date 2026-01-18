@@ -4,7 +4,8 @@ import connectDB from "@/lib/db";
 import Service from "@/models/Service";
 import ServicePricing from "@/models/ServicePricing";
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -16,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         const { name, duration, categoryId, image, shortDescription, pricing } = body;
         // pricing: [{ membershipId, price }]
 
-        const service = await Service.findByIdAndUpdate(params.id, {
+        const service = await Service.findByIdAndUpdate(id, {
             name,
             duration,
             categoryId,
@@ -46,7 +47,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -55,8 +57,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     
         await connectDB();
         
-        await Service.findByIdAndDelete(params.id);
-        await ServicePricing.deleteMany({ serviceId: params.id });
+        await Service.findByIdAndDelete(id);
+        await ServicePricing.deleteMany({ serviceId: id });
 
         return NextResponse.json({ success: true });
     

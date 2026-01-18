@@ -4,7 +4,8 @@ import connectDB from "@/lib/db";
 import User from "@/models/User";
 import Booking from "@/models/Booking";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         }
         await connectDB();
         
-        const user = await User.findById(params.id).populate('membershipId').lean();
+        const user = await User.findById(id).populate('membershipId').lean();
         if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
         // Optionally fetch their bookings too
@@ -27,7 +28,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -43,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (body.membershipId) updateData.membershipId = body.membershipId;
         // Add other fields as needed
 
-        const user = await User.findByIdAndUpdate(params.id, updateData, { new: true });
+        const user = await User.findByIdAndUpdate(id, updateData, { new: true });
         
         return NextResponse.json({ success: true, user });
 
@@ -52,7 +54,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -61,11 +64,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         await connectDB();
 
         // Prevent deleting self?
-        if (session.user.userId === params.id) {
+        if (session.user.userId === id) {
              return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
         }
 
-        await User.findByIdAndDelete(params.id);
+        await User.findByIdAndDelete(id);
         // Clean up bookings? Or keep them? Usually keep them or soft delete. 
         // For compliance/cleanup, maybe delete bookings or anonymize.
         // For now, just deleting user.

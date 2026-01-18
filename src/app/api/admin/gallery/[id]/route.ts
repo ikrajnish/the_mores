@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import Gallery from "@/models/Gallery";
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -12,7 +13,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     
         await connectDB();
         
-        const item = await Gallery.findByIdAndDelete(params.id);
+        const item = await Gallery.findByIdAndDelete(id);
         if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
 
         return NextResponse.json({ success: true });
