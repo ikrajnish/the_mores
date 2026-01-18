@@ -6,6 +6,7 @@ import { ArrowLeft, Clock, Calendar } from "lucide-react";
 import connectDB from "@/lib/db";
 import Service from "@/models/Service";
 import ServicePricing from "@/models/ServicePricing";
+import ServiceCategory from "@/models/ServiceCategory"; // Required for populate
 import Membership from "@/models/Membership";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";

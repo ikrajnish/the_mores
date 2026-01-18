@@ -4,8 +4,13 @@ import connectDB from "@/lib/db";
 import User from "@/models/User";
 import Booking from "@/models/Booking";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export async function GET(
+    req: NextRequest, 
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    const { id } = params;
+
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -28,8 +33,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export async function PATCH(
+    req: NextRequest, 
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    const { id } = params;
+
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -54,8 +64,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export async function DELETE(
+    req: NextRequest, 
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    const { id } = params;
+
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -63,7 +78,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         }
         await connectDB();
 
-        // Prevent deleting self?
+        // Prevent deleting self
         if (session.user.userId === id) {
              return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
         }

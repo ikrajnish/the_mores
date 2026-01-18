@@ -3,8 +3,13 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import Gallery from "@/models/Gallery";
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export async function DELETE(
+    req: NextRequest, 
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    const { id } = params;
+
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {

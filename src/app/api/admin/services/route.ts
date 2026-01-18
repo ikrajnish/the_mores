@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import Service from "@/models/Service";
 import ServicePricing from "@/models/ServicePricing";
-import ServiceCategory from "@/models/ServiceCategory"; // Ensure this model exists
+import ServiceCategory from "@/models/ServiceCategory"; 
+import Membership from "@/models/Membership"; // Required for populate
 
 export async function GET(req: NextRequest) {
     try {

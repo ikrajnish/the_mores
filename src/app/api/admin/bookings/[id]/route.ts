@@ -3,8 +3,13 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import Booking from "@/models/Booking";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export async function PATCH(
+    req: NextRequest, 
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    const { id } = params;
+
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {

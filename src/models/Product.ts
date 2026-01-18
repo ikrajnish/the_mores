@@ -4,6 +4,9 @@ export interface IProduct extends Document {
   name: string;
   price: number;
   stock: number;
+  image?: string;
+  description?: string;
+  brand?: string;
 }
 
 const ProductSchema: Schema<IProduct> = new Schema(

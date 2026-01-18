@@ -4,8 +4,13 @@ import connectDB from "@/lib/db";
 import Service from "@/models/Service";
 import ServicePricing from "@/models/ServicePricing";
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export async function PUT(
+    req: NextRequest, 
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    const { id } = params;
+
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
@@ -47,8 +52,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export async function DELETE(
+    req: NextRequest, 
+    props: { params: Promise<{ id: string }> }
+) {
+    const params = await props.params;
+    const { id } = params;
+
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== 'ADMIN') {
