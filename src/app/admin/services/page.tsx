@@ -631,7 +631,7 @@ function ServiceModal({ isOpen, onClose, isNew, service, categories, allSubcateg
 
         const pricingArray = Object.keys(pricingMap).map(mId => ({
             membershipId: mId,
-            price: pricingMap[mId]
+            price: Number(pricingMap[mId])
         }));
 
         const payload = {

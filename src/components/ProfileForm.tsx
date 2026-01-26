@@ -12,7 +12,8 @@ export function ProfileForm({ user }: { user: any }) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: user.name || "",
-    email: user.email || "",
+    phone: user.phone || "",
+    // email not needed in form data as it is not editable
   });
 
   const handleSave = async () => {
@@ -42,7 +43,16 @@ export function ProfileForm({ user }: { user: any }) {
     <div className="space-y-4">
        <div>
           <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Phone</label>
-          <div className="text-slate-50 font-medium bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-1">{user.phone}</div>
+          {editing ? (
+              <Input 
+                value={formData.phone} 
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                placeholder="Enter your phone"
+                className="mt-1 bg-slate-900 border-slate-700 text-slate-50 focus:ring-purple-500"
+              />
+          ) : (
+              <div className="text-slate-50 font-medium bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-1">{user.phone}</div>
+          )}
        </div>
 
        <div>
@@ -61,16 +71,8 @@ export function ProfileForm({ user }: { user: any }) {
 
        <div>
           <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Email</label>
-          {editing ? (
-              <Input 
-                value={formData.email} 
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                placeholder="Enter your email"
-                className="mt-1 bg-slate-900 border-slate-700 text-slate-50 focus:ring-purple-500"
-              />
-          ) : (
-              <div className="text-slate-50 font-medium bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-1">{user.email || "Not set"}</div>
-          )}
+          {/* Email is now Read-Only */}
+          <div className="text-slate-50 font-medium bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-1 cursor-not-allowed opacity-80">{user.email || "Not set"}</div>
        </div>
 
        <div className="pt-2">

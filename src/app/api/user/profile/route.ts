@@ -10,24 +10,23 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, email } = await req.json();
+    const { name, phone } = await req.json();
 
     await connectDB();
 
-    // Find user by phone (from session)
-    // Note: session.user.email is currently holding the phone number based on auth logic
-    const user = await User.findOne({ phone: session.user.email });
+    // Use ID from session for safety
+    const user = await User.findById(session.user.id);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     if (name) user.name = name;
-    if (email) user.email = email;
+    if (phone) user.phone = phone;
 
     await user.save();
 
-    return NextResponse.json({ success: true, user: { name: user.name, email: user.email } });
+    return NextResponse.json({ success: true, user: { name: user.name, email: user.email, phone: user.phone } });
   } catch (error) {
     console.error("Profile Update Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

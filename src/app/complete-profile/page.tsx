@@ -9,12 +9,13 @@ import { CheckCircle2 } from "lucide-react";
 export default function CompleteProfilePage() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("+91");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    if (phone.length < 10) {
-        setError("Please enter a valid phone number");
+    if (phone.length !== 10) {
+        setError("Please enter a valid 10-digit phone number");
         return;
     }
 
@@ -25,7 +26,7 @@ export default function CompleteProfilePage() {
       const res = await fetch("/api/user/complete-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ phone: `${countryCode}${phone}` }),
       });
 
       const data = await res.json();
@@ -55,14 +56,29 @@ export default function CompleteProfilePage() {
                 <label htmlFor="phone" className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">
                     Phone Number
                 </label>
-                <Input 
-                    id="phone"
-                    placeholder="9999999999" 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="text-lg tracking-wider"
-                    type="tel"
-                />
+                <div className="flex gap-2">
+                    <select
+                        className="flex h-10 w-[90px] items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus:ring-slate-300"
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                    >
+                        <option value="+91">IN +91</option>
+                        <option value="+1">US +1</option>
+                        <option value="+44">UK +44</option>
+                        <option value="+971">UAE +971</option>
+                    </select>
+                    <Input 
+                        id="phone"
+                        placeholder="98765 43210" 
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        className="text-lg tracking-wider flex-1"
+                        type="tel"
+                    />
+                </div>
+                {phone.length > 0 && phone.length < 10 && (
+                    <p className="text-xs text-red-500 mt-1 ml-1">Must be exactly 10 digits</p>
+                )}
             </div>
 
             {error && (
@@ -71,7 +87,7 @@ export default function CompleteProfilePage() {
                 </div>
             )}
 
-            <Button onClick={handleSubmit} disabled={loading || phone.length < 10} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+            <Button onClick={handleSubmit} disabled={loading || phone.length !== 10} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
                 {loading ? "Saving..." : "Complete Profile"}
                 {!loading && <CheckCircle2 className="w-4 h-4 ml-2" />}
             </Button>
