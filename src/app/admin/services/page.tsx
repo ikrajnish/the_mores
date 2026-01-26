@@ -7,42 +7,60 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit2, Trash2, PlusCircle, Search, Layers, Clock } from "lucide-react";
+import { Edit2, Trash2, PlusCircle, Search, Layers, Clock, Grid, ChevronRight, ArrowLeft, FolderPlus, Folder } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
+type ViewMode = 'CATEGORIES' | 'SUBCATEGORIES' | 'SERVICES';
+
 export default function AdminServicesPage() {
-  const [services, setServices] = useState<any[]>([]);
+  // Data
   const [categories, setCategories] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<any[]>([]);
+  
+  // Lookup Data (for modals/pricing)
   const [allPricing, setAllPricing] = useState<any[]>([]);
-  const [memberships, setMemberships] = useState<any[]>([]); // Derived or fetched
+  const [memberships, setMemberships] = useState<any[]>([]);
+  
+  // Navigation State
+  const [viewMode, setViewMode] = useState<ViewMode>('CATEGORIES');
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null);
+
+  // Modals & FormsState
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [subcategoryModalOpen, setSubcategoryModalOpen] = useState(false);
+  const [serviceModalOpen, setServiceModalOpen] = useState(false);
+  
+  const [editItem, setEditItem] = useState<any>(null); // For Category/Subcategory editing
+  const [isEditing, setIsEditing] = useState(false); // Flag to differentiate Add vs Edit
+
+  const [editAppt, setEditAppt] = useState<any>(null); // Service being edited
+  const [isNewService, setIsNewService] = useState(false);
   
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
-  const [editAppt, setEditAppt] = useState<any>(null); // Service being edited
-  const [isNew, setIsNew] = useState(false);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
-  // Fetch everything needed
+  // Initial Data Fetch
   const fetchData = async () => {
     setLoading(true);
     try {
-        // Fetch Services & Categories & Pricing
-        const sRes = await fetch('/api/admin/services');
+        const [cRes, mRes, sRes] = await Promise.all([
+            fetch('/api/admin/categories'),
+            fetch('/api/admin/memberships'),
+            fetch('/api/admin/services') // Needed for pricing lookup later, or we can fetch partially
+        ]);
+
+        const cData = await cRes.json();
+        const mData = await mRes.json();
         const sData = await sRes.json();
-        
-        if (sData.services) setServices(sData.services);
-        if (sData.categories) setCategories(sData.categories);
+
+        if (cData.categories) setCategories(cData.categories);
+        if (mData.memberships) setMemberships(mData.memberships);
         if (sData.pricing) setAllPricing(sData.pricing);
 
-        // Fetch Memberships for the Pricing Matrix columns
-        const mRes = await fetch('/api/admin/memberships');
-        const mData = await mRes.json();
-        if (mData.memberships) setMemberships(mData.memberships);
-
     } catch (e) {
-        console.error(e);
+        console.error("Error fetching initial data", e);
     } finally {
         setLoading(false);
     }
@@ -52,235 +70,565 @@ export default function AdminServicesPage() {
      fetchData();
   }, []);
 
-  const handleDelete = async (id: string) => {
-      if (!confirm("Are you sure you want to delete this service?")) return;
-      await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
-      fetchData();
+  // Fetch Subcategories when Category is selected
+  useEffect(() => {
+      if (selectedCategory) {
+          fetch(`/api/admin/subcategories?categoryId=${selectedCategory._id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.subcategories) setSubcategories(data.subcategories);
+            });
+      }
+  }, [selectedCategory]);
+
+  // Fetch Services when Subcategory is selected
+  useEffect(() => {
+    if (selectedSubcategory) {
+        // We can either filter from a global list or fetch specific.
+        // Let's filter from global for now since we fetched all services for pricing lookup anyway.
+        // OR fetch fresh to ensure we have latest.
+        fetch(`/api/admin/services`)
+          .then(res => res.json())
+          .then(data => {
+              if (data.services) {
+                  const filtered = data.services.filter((s:any) => 
+                      s.subcategory?._id === selectedSubcategory._id || s.subcategory === selectedSubcategory._id
+                  );
+                  setServices(filtered);
+              }
+              if (data.pricing) setAllPricing(data.pricing);
+          });
+    }
+  }, [selectedSubcategory]);
+
+  const handleCategoryClick = (cat: any) => {
+      setSelectedCategory(cat);
+      setViewMode('SUBCATEGORIES');
   };
 
-  const openAddModal = () => {
-      setIsNew(true);
-      setEditAppt({ name: "", duration: 30, categoryId: categories[0]?._id, price: 0, image: "", shortDescription: "" });
+  const handleSubcategoryClick = (sub: any) => {
+      setSelectedSubcategory(sub);
+      setViewMode('SERVICES');
   };
 
-  const openEditModal = (service: any) => {
-      setIsNew(false);
+  const handleBack = () => {
+      if (viewMode === 'SERVICES') {
+          setViewMode('SUBCATEGORIES');
+          setSelectedSubcategory(null);
+          setServices([]);
+      } else if (viewMode === 'SUBCATEGORIES') {
+          setViewMode('CATEGORIES');
+          setSelectedCategory(null);
+          setSubcategories([]);
+      }
+  };
+
+  const handleCreateOrUpdateCategory = async (name: string, image: string) => {
+      if (isEditing && editItem) {
+          // Update
+           const res = await fetch(`/api/admin/categories/${editItem._id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ name, image }),
+              headers: { 'Content-Type': 'application/json' }
+          });
+          if (res.ok) {
+              fetchData();
+              setCategoryModalOpen(false);
+              setEditItem(null);
+          } else {
+              alert("Failed to update category");
+          }
+      } else {
+          // Create
+          const res = await fetch('/api/admin/categories', {
+              method: 'POST',
+              body: JSON.stringify({ name, image }),
+              headers: { 'Content-Type': 'application/json' }
+          });
+          if (res.ok) {
+              fetchData();
+              setCategoryModalOpen(false);
+          } else {
+              alert("Failed to create category");
+          }
+      }
+  };
+
+  const handleDeleteCategory = async (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      if (!confirm("Are you sure you want to delete this category?")) return;
+      
+      const res = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (res.ok) {
+          fetchData();
+      } else {
+          alert(data.error || "Failed to delete category");
+      }
+  };
+
+  const handleCreateOrUpdateSubcategory = async (name: string, image: string) => {
+      if (isEditing && editItem) {
+          // Update
+          const res = await fetch(`/api/admin/subcategories/${editItem._id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ name, image }),
+              headers: { 'Content-Type': 'application/json' }
+          });
+           if (res.ok) {
+             const updated = await fetch(`/api/admin/subcategories?categoryId=${selectedCategory._id}`).then(r => r.json());
+             setSubcategories(updated.subcategories);
+             setSubcategoryModalOpen(false);
+             setEditItem(null);
+          } else {
+              alert("Failed to update subcategory");
+          }
+      } else {
+          // Create
+          if (!selectedCategory) return;
+          const res = await fetch('/api/admin/subcategories', {
+              method: 'POST',
+              body: JSON.stringify({ name, categoryId: selectedCategory._id, image }),
+              headers: { 'Content-Type': 'application/json' }
+          });
+          if (res.ok) {
+             const updated = await fetch(`/api/admin/subcategories?categoryId=${selectedCategory._id}`).then(r => r.json());
+             setSubcategories(updated.subcategories);
+             setSubcategoryModalOpen(false);
+          } else {
+              alert("Failed to create subcategory");
+          }
+      }
+  };
+
+  const handleDeleteSubcategory = async (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      if (!confirm("Are you sure you want to delete this subcategory?")) return;
+
+      const res = await fetch(`/api/admin/subcategories/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+
+       if (res.ok) {
+             const updated = await fetch(`/api/admin/subcategories?categoryId=${selectedCategory._id}`).then(r => r.json());
+             setSubcategories(updated.subcategories);
+      } else {
+          alert(data.error || "Failed to delete subcategory");
+      }
+  };
+
+  // Helper to open Add/Edit Modals
+  const openCategoryModal = (category?: any) => {
+      if (category) {
+          setIsEditing(true);
+          setEditItem(category);
+      } else {
+          setIsEditing(false);
+          setEditItem(null);
+      }
+      setCategoryModalOpen(true);
+  };
+
+  const openSubcategoryModal = (subcategory?: any) => {
+      if (subcategory) {
+           setIsEditing(true);
+           setEditItem(subcategory);
+      } else {
+           setIsEditing(false);
+           setEditItem(null);
+      }
+      setSubcategoryModalOpen(true);
+  };
+
+  const openAddServiceModal = () => {
+      setIsNewService(true);
+      setEditAppt({
+          name: "",
+          duration: 30,
+          categoryId: selectedCategory._id,
+          subcategory: selectedSubcategory._id,
+          price: 0,
+          image: "",
+          shortDescription: ""
+      });
+      setServiceModalOpen(true);
+  };
+
+  const openEditServiceModal = (service: any) => {
+      setIsNewService(false);
       setEditAppt(service);
+      setServiceModalOpen(true);
   };
 
-  const filteredServices = services.filter(s => {
-      const matchSearch = s.name.toLowerCase().includes(search.toLowerCase());
-      const matchCat = categoryFilter === 'ALL' || s.categoryId?._id === categoryFilter || s.categoryId === categoryFilter;
-      return matchSearch && matchCat;
-  });
+  const handleDeleteService = async (id: string) => {
+      if (!confirm("Are you sure?")) return;
+      await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
+      // Refresh local list
+      const updated = services.filter(s => s._id !== id);
+      setServices(updated);
+  };
+
+  const handleServiceSuccess = () => {
+      // Re-fetch services for this subcategory
+       fetch(`/api/admin/services`)
+          .then(res => res.json())
+          .then(data => {
+              if (data.services) {
+                  const filtered = data.services.filter((s:any) => 
+                      s.subcategory?._id === selectedSubcategory._id || s.subcategory === selectedSubcategory._id
+                  );
+                  setServices(filtered);
+              }
+              if (data.pricing) setAllPricing(data.pricing);
+          });
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
+        
+        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-                <h1 className="text-3xl font-bold text-slate-900">Services</h1>
-                <p className="text-slate-500">Manage service offerings and pricing</p>
+            <div className="flex items-center gap-2">
+                {viewMode !== 'CATEGORIES' && (
+                    <Button variant="ghost" size="icon" onClick={handleBack} className="mr-2">
+                        <ArrowLeft className="w-5 h-5 text-slate-50" />
+                    </Button>
+                )}
+                <div>
+                   <h1 className="text-3xl font-bold text-slate-50 flex items-center gap-2">
+                       {viewMode === 'CATEGORIES' && 'Service Categories'}
+                       {viewMode === 'SUBCATEGORIES' && selectedCategory?.name}
+                       {viewMode === 'SERVICES' && selectedSubcategory?.name}
+                   </h1>
+                   <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                       <span className={viewMode === 'CATEGORIES' ? "font-bold text-slate-50" : ""}>Categories</span>
+                       {viewMode !== 'CATEGORIES' && (
+                           <>
+                                <ChevronRight className="w-4 h-4" />
+                                <span className={viewMode === 'SUBCATEGORIES' ? "font-bold text-slate-50" : ""}>
+                                    {selectedCategory?.name}
+                                </span>
+                           </>
+                       )}
+                       {viewMode === 'SERVICES' && (
+                           <>
+                                <ChevronRight className="w-4 h-4" />
+                                <span className="font-bold text-slate-900">{selectedSubcategory?.name}</span>
+                           </>
+                       )}
+                   </div>
+                </div>
             </div>
             
             <div className="flex gap-2">
-                <Button onClick={openAddModal} className="bg-slate-900 text-white">
-                    <PlusCircle className="w-4 h-4 mr-2" /> Add Service
-                </Button>
-                <Button variant="outline" onClick={() => setIsCategoryModalOpen(true)}>
-                    <Layers className="w-4 h-4 mr-2" /> Categories
-                </Button>
-                <Link href="/admin">
-                    <Button variant="outline">Back to Dashboard</Button>
+                {viewMode === 'CATEGORIES' && (
+                    <Button onClick={() => openCategoryModal()} className="bg-slate-100 text-slate-900 hover:bg-slate-200">
+                        <PlusCircle className="w-4 h-4 mr-2" /> Add Category
+                    </Button>
+                )}
+                {viewMode === 'SUBCATEGORIES' && (
+                     <Button onClick={() => openSubcategoryModal()} className="bg-slate-900 text-white">
+                        <PlusCircle className="w-4 h-4 mr-2" /> Add Subcategory
+                    </Button>
+                )}
+                {viewMode === 'SERVICES' && (
+                    <Button onClick={openAddServiceModal} className="bg-slate-900 text-white">
+                        <PlusCircle className="w-4 h-4 mr-2" /> Add Service
+                    </Button>
+                )}
+                 <Link href="/admin">
+                     <Button variant="outline" className="text-white border-slate-700 bg-slate-800 hover:bg-slate-900">Dashboard</Button>
                 </Link>
             </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4">
-            <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input 
-                    placeholder="Search services..." 
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
-                />
-            </div>
-            <select 
-                className="h-10 px-3 rounded-md border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-950"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-                <option value="ALL">All Categories</option>
-                {categories.map(c => (
-                    <option key={c._id} value={c._id}>{c.name}</option>
-                ))}
-            </select>
-        </div>
+        {/* Content Area */}
+        {loading ? (
+             <div className="text-center py-20 text-slate-400">Loading...</div>
+        ) : (
+            <>
+                {/* 1. Categories Grid */}
+                {viewMode === 'CATEGORIES' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {categories.map((cat) => (
+                            <div 
+                                key={cat._id} 
+                                onClick={() => handleCategoryClick(cat)}
+                                className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 transition-all cursor-pointer group"
+                            >
+                                {cat.image ? (
+                                    <div className="w-12 h-12 rounded-lg mb-4 overflow-hidden bg-slate-100">
+                                        <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                                    </div>
+                                ) : (
+                                    <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-100 transition-colors">
+                                        <Layers className="w-6 h-6 text-purple-600" />
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-start">
+                                    <h3 className="font-bold text-lg text-slate-50 mb-1 group-hover:text-purple-400">{cat.name}</h3>
+                                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                                         <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-slate-700 hover:text-white" onClick={(e) => { e.stopPropagation(); openCategoryModal(cat); }}>
+                                            <Edit2 className="w-3 h-3 text-slate-400" />
+                                         </Button>
+                                         <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500 hover:bg-red-50" onClick={(e) => handleDeleteCategory(e, cat._id)}>
+                                            <Trash2 className="w-3 h-3" />
+                                         </Button>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-slate-400">Click to manage subcategories</p>
+                            </div>
+                        ))}
+                        {categories.length === 0 && (
+                            <div className="col-span-full text-center py-20 text-slate-400 bg-slate-800/50 rounded-xl border border-dashed border-slate-700">
+                                No categories found. Create one to get started.
+                            </div>
+                        )}
+                    </div>
+                )}
 
-        {/* List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredServices.map(service => (
-                <ServiceAdminCard 
-                    key={service._id} 
-                    service={service} 
-                    pricing={allPricing.filter((p: any) => p.serviceId === service._id)}
-                    memberships={memberships}
-                    onEdit={() => openEditModal(service)}
-                    onDelete={() => handleDelete(service._id)}
-                />
-            ))}
-        </div>
+                {/* 2. Subcategories Grid */}
+                {viewMode === 'SUBCATEGORIES' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                         {subcategories.map((sub) => (
+                            <div 
+                                key={sub._id} 
+                                onClick={() => handleSubcategoryClick(sub)}
+                                className="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all cursor-pointer group"
+                            >
+                                {sub.image ? (
+                                    <div className="w-12 h-12 rounded-lg mb-4 overflow-hidden bg-slate-100">
+                                        <img src={sub.image} alt={sub.name} className="w-full h-full object-cover" />
+                                    </div>
+                                ) : (
+                                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+                                        <Grid className="w-6 h-6 text-blue-600" />
+                                    </div>
+                                )}
+                                 <div className="flex justify-between items-start">
+                                    <h3 className="font-bold text-lg text-slate-50 mb-1 group-hover:text-blue-400">{sub.name}</h3>
+                                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                                         <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-slate-700 hover:text-white" onClick={(e) => { e.stopPropagation(); openSubcategoryModal(sub); }}>
+                                            <Edit2 className="w-3 h-3 text-slate-400" />
+                                         </Button>
+                                         <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500 hover:bg-red-50" onClick={(e) => handleDeleteSubcategory(e, sub._id)}>
+                                            <Trash2 className="w-3 h-3" />
+                                         </Button>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-slate-400">Click to view services</p>
+                            </div>
+                        ))}
+                         {subcategories.length === 0 && (
+                            <div className="col-span-full text-center py-20 text-slate-400 bg-slate-800/50 rounded-xl border border-dashed border-slate-700">
+                                No subcategories found in {selectedCategory?.name}.
+                            </div>
+                        )}
+                    </div>
+                )}
 
+                {/* 3. Services Grid */}
+                {viewMode === 'SERVICES' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {services.map(service => (
+                            <ServiceAdminCard 
+                                key={service._id} 
+                                service={service} 
+                                pricing={allPricing.filter((p: any) => p.serviceId === service._id)}
+                                memberships={memberships}
+                                onEdit={() => openEditServiceModal(service)}
+                                onDelete={() => handleDeleteService(service._id)}
+                            />
+                        ))}
+                         {services.length === 0 && (
+                            <div className="col-span-full text-center py-20 text-slate-400 bg-slate-800/50 rounded-xl border border-dashed border-slate-700">
+                                No services found in {selectedSubcategory?.name}.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </>
+        )}
       </main>
 
-      <ServiceModal 
-        isOpen={!!editAppt} 
-        onClose={() => setEditAppt(null)} 
-        isNew={isNew} 
-        service={editAppt}
-        categories={categories}
-        memberships={memberships}
-        allPricing={allPricing}
-        onSuccess={fetchData}
+      <Footer />
+
+      {/* Modals */}
+      <SimpleNameModal 
+        isOpen={categoryModalOpen} 
+        onClose={() => setCategoryModalOpen(false)} 
+        title={isEditing ? "Edit Category" : "Add Category"} 
+        onSave={handleCreateOrUpdateCategory} 
+        initialData={isEditing ? editItem : null}
       />
 
-      <CategoryModal 
-        isOpen={isCategoryModalOpen} 
-        onClose={() => setIsCategoryModalOpen(false)} 
-        categories={categories}
-        onSuccess={fetchData}
+       <SimpleNameModal 
+        isOpen={subcategoryModalOpen} 
+        onClose={() => setSubcategoryModalOpen(false)} 
+        title={isEditing ? "Edit Subcategory" : `Add Subcategory to ${selectedCategory?.name}`}
+        onSave={handleCreateOrUpdateSubcategory} 
+        initialData={isEditing ? editItem : null}
       />
-      
-      <Footer />
+
+      <ServiceModal 
+        isOpen={serviceModalOpen} 
+        onClose={() => setServiceModalOpen(false)} 
+        isNew={isNewService} 
+        service={editAppt}
+        categories={categories} // Still pass all just in case, but form should lock it
+        allSubcategories={subcategories} // Pass current context subcats
+        memberships={memberships}
+        allPricing={allPricing}
+        onSuccess={handleServiceSuccess}
+        fixedCategory={selectedCategory}
+        fixedSubcategory={selectedSubcategory}
+      />
+
     </div>
   );
 }
 
-// ... ServiceAdminCard ...
-// ... ServiceModal ...
+// --- Sub Components ---
 
-function CategoryModal({ isOpen, onClose, categories, onSuccess }: any) {
+function SimpleNameModal({ isOpen, onClose, title, onSave, initialData }: any) {
     const [name, setName] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [image, setImage] = useState("");
 
-    const handleAdd = async () => {
-        if (!name) return;
-        setLoading(true);
-        try {
-            const res = await fetch('/api/admin/services/categories', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
-            });
-            if (res.ok) {
-                onSuccess();
-                setName("");
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                setName(initialData.name || "");
+                setImage(initialData.image || "");
             } else {
-                alert("Failed to add category");
+                setName("");
+                setImage("");
             }
-        } catch (e) {
-            alert("Error adding category");
-        } finally {
-            setLoading(false);
+        }
+    }, [isOpen, initialData]);
+
+    const handleSave = () => {
+        if (!name) return;
+        onSave(name, image);
+        if (!initialData) {
+            setName("");
+            setImage("");
         }
     };
 
+    if (!isOpen) return null;
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader><DialogTitle>Manage Categories</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
-                     <div className="flex gap-2">
-                         <Input 
-                            placeholder="New Category Name" 
-                            value={name} 
-                            onChange={e => setName(e.target.value)} 
-                         />
-                         <Button onClick={handleAdd} disabled={loading}>Add</Button>
-                     </div>
-                     
-                     <div className="border rounded-md divide-y max-h-[200px] overflow-y-auto">
-                         {categories.map((c: any) => (
-                             <div key={c._id} className="p-2 text-sm flex justify-between">
-                                 <span>{c.name}</span>
-                                 {/* Potential delete button here later */}
-                             </div>
-                         ))}
-                     </div>
+            <DialogContent className="max-w-sm bg-slate-800 border-slate-700">
+                <DialogHeader><DialogTitle className="text-slate-50">{title}</DialogTitle></DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div>
+                        <label className="text-sm font-medium mb-2 block text-slate-300">Name</label>
+                        <Input value={name} onChange={e => setName(e.target.value)} placeholder="Enter name..." className="bg-slate-900 border-slate-700 text-slate-50 placeholder:text-slate-500" />
+                    </div>
+                    <div>
+                        <label className="text-sm font-medium mb-2 block text-slate-300">Image URL (Optional)</label>
+                        <Input value={image} onChange={e => setImage(e.target.value)} placeholder="https://..." className="bg-slate-900 border-slate-700 text-slate-50 placeholder:text-slate-500" />
+                    </div>
                 </div>
+                <DialogFooter>
+                    <Button onClick={handleSave} className="bg-slate-100 text-slate-900 hover:bg-slate-200">{initialData ? "Update" : "Create"}</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )
 }
 
 function ServiceAdminCard({ service, pricing, memberships, onEdit, onDelete }: any) {
-    // Find base price (usually NORMAL)
     const normalId = memberships.find((m: any) => m.name === 'NORMAL')?._id;
     const basePrice = pricing.find((p: any) => p.membershipId === normalId || p.membershipId?._id === normalId)?.price || 0;
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col">
+        <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm p-5 flex flex-col">
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
-                     {/* <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                         {service.image ? <img src={service.image} className="w-full h-full object-cover rounded-lg" /> : <Layers className="w-5 h-5 text-slate-400" />}
-                     </div> */}
+                     {service.image && (
+                         <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                             <img src={service.image} alt={service.name} className="w-full h-full object-cover" />
+                         </div>
+                     )}
                      <div>
-                         <h3 className="font-bold text-slate-900 line-clamp-1">{service.name}</h3>
-                         <div className="text-xs text-slate-500 flex items-center gap-1">
-                             <Layers className="w-3 h-3" /> {service.categoryId?.name || "Uncategorized"}
+                         <h3 className="font-bold text-slate-50 line-clamp-1">{service.name}</h3>
+                         <div className="text-xs text-slate-500 flex flex-wrap items-center gap-2 mt-1">
+                             <span className="flex items-center gap-1 bg-slate-700 px-1.5 py-0.5 rounded text-slate-300">
+                                <Clock className="w-3 h-3" /> {service.duration} min
+                             </span>
                          </div>
                      </div>
                 </div>
-                <Badge variant="outline">₹{basePrice}</Badge>
+                <Badge variant="outline" className="text-slate-300 border-slate-600">₹{basePrice}</Badge>
             </div>
             
-            <p className="text-sm text-slate-500 mb-4 line-clamp-2 min-h-[40px]">
+            <p className="text-sm text-slate-400 mb-4 line-clamp-2 min-h-[40px]">
                 {service.shortDescription || "No description provided."}
             </p>
 
-            <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="text-xs text-slate-400 flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {service.duration} min
-                </div>
-                <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onEdit}>
-                        <Edit2 className="w-4 h-4 text-slate-600" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-50" onClick={onDelete}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                </div>
+            <div className="mt-auto pt-4 border-t border-slate-700 flex items-center justify-end gap-2">
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-700 hover:text-white" onClick={onEdit}>
+                    <Edit2 className="w-4 h-4 text-slate-400" />
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-50" onClick={onDelete}>
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                </Button>
             </div>
         </div>
     )
 }
 
-function ServiceModal({ isOpen, onClose, isNew, service, categories, memberships, allPricing, onSuccess }: any) {
+function ServiceModal({ isOpen, onClose, isNew, service, categories, allSubcategories, memberships, allPricing, onSuccess, fixedCategory, fixedSubcategory }: any) {
     const [formData, setFormData] = useState<any>({});
     const [pricingMap, setPricingMap] = useState<any>({});
     const [tab, setTab] = useState<'DETAILS' | 'PRICING'>('DETAILS');
 
+    // If we are in fixed context, use that.
     useEffect(() => {
-        if (service) {
-            setFormData({ ...service });
-            
-            // Initialize pricing map
-            const pMap: any = {};
-            memberships.forEach((m: any) => {
-                // Find existing price
-                const validP = allPricing.find((p: any) => p.serviceId === service._id && (p.membershipId === m._id || p.membershipId?._id === m._id));
-                pMap[m._id] = validP ? validP.price : 0;
-            });
-            setPricingMap(pMap);
+        if (isOpen) {
+             const initialData = service ? { 
+                 ...service,
+                categoryId: typeof service.categoryId === 'object' ? service.categoryId?._id : service.categoryId,
+                subcategory: typeof service.subcategory === 'object' ? service.subcategory?._id : service.subcategory
+             } : {
+                 name: "", 
+                 duration: 30, 
+                 categoryId: fixedCategory?._id, 
+                 subcategory: fixedSubcategory?._id,
+                 price: 0, 
+                 image: "", 
+                 shortDescription: "" 
+             };
+             
+             setFormData(initialData);
+
+             // Pricing
+             const pMap: any = {};
+             if (service) {
+                memberships.forEach((m: any) => {
+                    const validP = allPricing.find((p: any) => p.serviceId === service._id && (p.membershipId === m._id || p.membershipId?._id === m._id));
+                    pMap[m._id] = validP ? validP.price : 0;
+                });
+             } else {
+                 // Initialize 0
+                 memberships.forEach((m: any) => pMap[m._id] = 0);
+             }
+             setPricingMap(pMap);
         }
-    }, [service, memberships, allPricing]);
+    }, [isOpen, service, fixedCategory, fixedSubcategory, memberships, allPricing]);
 
     const handleSave = async () => {
+        if (!formData.name || !formData.categoryId || !formData.subcategory) {
+            alert("Name, Category, and Subcategory are required");
+            return;
+        }
+
         const pricingArray = Object.keys(pricingMap).map(mId => ({
             membershipId: mId,
             price: pricingMap[mId]
@@ -292,7 +640,7 @@ function ServiceModal({ isOpen, onClose, isNew, service, categories, memberships
         };
 
         const method = isNew ? 'POST' : 'PUT';
-        const url = isNew ? '/api/admin/services' : `/api/admin/services/${service._id}`;
+        const url = isNew ? '/api/admin/services' : `/api/admin/services/${service?._id}`;
 
         await fetch(url, {
             method,
@@ -307,21 +655,21 @@ function ServiceModal({ isOpen, onClose, isNew, service, categories, memberships
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-md">
-                <DialogHeader><DialogTitle>{isNew ? "Add Service" : "Edit Service"}</DialogTitle></DialogHeader>
+            <DialogContent className="max-w-md bg-slate-800 border-slate-700">
+                <DialogHeader><DialogTitle className="text-slate-50">{isNew ? "Add Service" : "Edit Service"}</DialogTitle></DialogHeader>
                 
-                <div className="flex gap-4 border-b border-slate-200 mb-4">
+                <div className="flex gap-4 border-b border-slate-700 mb-4">
                     <button 
-                        className={`pb-2 text-sm font-medium ${tab === 'DETAILS' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-500'}`}
+                        className={`pb-2 text-sm font-medium ${tab === 'DETAILS' ? 'text-slate-50 border-b-2 border-slate-50' : 'text-slate-500'}`}
                         onClick={() => setTab('DETAILS')}
                     >
                         Details
                     </button>
                     <button 
-                         className={`pb-2 text-sm font-medium ${tab === 'PRICING' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-500'}`}
+                         className={`pb-2 text-sm font-medium ${tab === 'PRICING' ? 'text-slate-50 border-b-2 border-slate-50' : 'text-slate-500'}`}
                          onClick={() => setTab('PRICING')}
                     >
-                        Pricing Log
+                         Pricing Log
                     </button>
                 </div>
 
@@ -329,48 +677,50 @@ function ServiceModal({ isOpen, onClose, isNew, service, categories, memberships
                     {tab === 'DETAILS' ? (
                         <>
                              <div>
-                                <label className="text-sm font-medium mb-1 block">Service Name</label>
-                                <Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} />
+                                <label className="text-sm font-medium mb-1 block text-slate-300">Service Name</label>
+                                <Input value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-900 border-slate-700 text-slate-50" />
                              </div>
                              <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block">Duration (min)</label>
-                                    <Input type="number" value={formData.duration || ''} onChange={e => setFormData({...formData, duration: Number(e.target.value)})} />
+                                    <label className="text-sm font-medium mb-1 block text-slate-300">Duration (min)</label>
+                                    <Input type="number" value={formData.duration || ''} onChange={e => setFormData({...formData, duration: Number(e.target.value)})} className="bg-slate-900 border-slate-700 text-slate-50" />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block">Category</label>
-                                    <select 
-                                        className="w-full h-10 px-3 rounded-md border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-950"
-                                        value={typeof formData.categoryId === 'object' ? formData.categoryId?._id : formData.categoryId} 
-                                        onChange={e => setFormData({...formData, categoryId: e.target.value})}
-                                    >
-                                        <option value="">Select Category</option>
-                                        {categories.map((c: any) => (
-                                            <option key={c._id} value={c._id}>{c.name}</option>
-                                        ))}
-                                    </select>
+                                    <label className="text-sm font-medium mb-1 block text-slate-300">Category</label>
+                                    <Input disabled value={fixedCategory?.name || "Loading..."} className="bg-slate-900/50 border-slate-700 text-slate-400" />
                                 </div>
                              </div>
+                             
+                             {/* Subcategory Selector */}
                              <div>
-                                <label className="text-sm font-medium mb-1 block">Description</label>
-                                <Textarea value={formData.shortDescription || ''} onChange={e => setFormData({...formData, shortDescription: e.target.value})} />
+                                <label className="text-sm font-medium mb-1 block text-slate-300">Subcategory</label>
+                                <Input disabled value={fixedSubcategory?.name || "Loading..."} className="bg-slate-900/50 border-slate-700 text-slate-400" />
+                             </div>
+
+                             <div>
+                                <label className="text-sm font-medium mb-1 block text-slate-300">Description</label>
+                                <Textarea 
+                                    className="bg-slate-900 text-slate-50 border-slate-700 focus:border-slate-500"
+                                    value={formData.shortDescription || ''} 
+                                    onChange={e => setFormData({...formData, shortDescription: e.target.value})} 
+                                />
                              </div>
                              <div>
-                                <label className="text-sm font-medium mb-1 block">Image URL</label>
-                                <Input value={formData.image || ''} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="https://..." />
+                                <label className="text-sm font-medium mb-1 block text-slate-300">Image URL</label>
+                                <Input value={formData.image || ''} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="https://..." className="bg-slate-900 border-slate-700 text-slate-50" />
                              </div>
                         </>
                     ) : (
                         <div className="space-y-3">
                             <p className="text-xs text-slate-500 mb-2">Set custom prices for each membership tier.</p>
                             {memberships.map((m: any) => (
-                                <div key={m._id} className="flex items-center justify-between border p-2 rounded-md bg-slate-50">
-                                    <span className="font-medium text-sm">{m.name}</span>
+                                <div key={m._id} className="flex items-center justify-between border border-slate-700 p-2 rounded-md bg-slate-900">
+                                    <span className="font-medium text-sm text-slate-300">{m.name}</span>
                                     <div className="flex items-center gap-2">
                                         <span className="text-slate-400 text-xs">₹</span>
                                         <Input 
                                             type="number" 
-                                            className="w-24 h-8 bg-white"
+                                            className="w-24 h-8 bg-slate-800 border-slate-600 text-slate-50"
                                             value={pricingMap[m._id]} 
                                             onChange={e => setPricingMap({...pricingMap, [m._id]: e.target.value })}
                                         />
@@ -382,7 +732,7 @@ function ServiceModal({ isOpen, onClose, isNew, service, categories, memberships
                 </div>
 
                 <DialogFooter>
-                    <Button onClick={handleSave}>Save Service</Button>
+                    <Button onClick={handleSave} className="bg-slate-100 text-slate-900 hover:bg-slate-200">Save Service</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

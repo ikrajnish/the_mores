@@ -16,13 +16,16 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
+  const [membershipFilter, setMembershipFilter] = useState("ALL");
   const [membershipUser, setMembershipUser] = useState<any>(null);
+  const [memberships, setMemberships] = useState<any[]>([]);
   
   const fetchUsers = () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (roleFilter !== 'ALL') params.append('role', roleFilter);
+    if (membershipFilter !== 'ALL') params.append('membership', membershipFilter);
 
     fetch(`/api/admin/users?${params.toString()}`)
       .then(res => res.json())
@@ -34,12 +37,21 @@ export default function AdminUsersPage() {
   };
 
   useEffect(() => {
+     // Fetch memberships for filter
+     fetch('/api/admin/memberships')
+        .then(res => res.json())
+        .then(data => {
+            if (data.memberships) setMemberships(data.memberships);
+        });
+  }, []);
+
+  useEffect(() => {
      // Debounce search
      const timer = setTimeout(() => {
          fetchUsers();
      }, 500);
      return () => clearTimeout(timer);
-  }, [search, roleFilter]);
+  }, [search, roleFilter, membershipFilter]);
 
   const toggleBlock = async (userId: string, currentStatus: boolean) => {
       if (!confirm(`Are you sure you want to ${currentStatus ? 'unblock' : 'block'} this user?`)) return;
@@ -80,35 +92,36 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
-                <h1 className="text-3xl font-bold text-slate-900">Users</h1>
-                <p className="text-slate-500">Manage customers and administrators</p>
+                <h1 className="text-3xl font-bold text-slate-50">Users</h1>
+                <p className="text-slate-400">Manage customers and administrators</p>
             </div>
             
             <Link href="/admin">
-                <Button variant="outline">Back to Dashboard</Button>
+                <Button variant="outline" className="w-full sm:w-auto border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">Back to Dashboard</Button>
             </Link>
         </div>
 
         {/* Filters & Search */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4">
+        <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm mb-6 flex flex-col lg:flex-row gap-4">
             <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <Input 
                     placeholder="Search by name, email, or phone..." 
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-slate-700"
                 />
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                 <select 
-                    className="h-10 px-3 rounded-md border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-950"
+                    className="h-10 px-3 rounded-md border border-slate-800 bg-slate-950 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full sm:w-auto"
                     value={roleFilter}
                     onChange={(e) => setRoleFilter(e.target.value)}
                 >
@@ -116,17 +129,30 @@ export default function AdminUsersPage() {
                     <option value="CUSTOMER">Customer</option>
                     <option value="ADMIN">Admin</option>
                 </select>
-                <Button variant="outline" onClick={fetchUsers}>
+
+                 <select 
+                    className="h-10 px-3 rounded-md border border-slate-800 bg-slate-950 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full sm:w-auto"
+                    value={membershipFilter}
+                    onChange={(e) => setMembershipFilter(e.target.value)}
+                >
+                    <option value="ALL">All Memberships</option>
+                    <option value="NORMAL">Normal (Non-Member)</option>
+                    {memberships.filter(m => m.name !== 'NORMAL').map(m => (
+                        <option key={m._id} value={m._id}>{m.name}</option>
+                    ))}
+                </select>
+
+                <Button variant="outline" onClick={fetchUsers} className="w-full sm:w-auto border-slate-700 text-slate-300 hover:bg-slate-800">
                     Refresh
                 </Button>
             </div>
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-slate-500 uppercase font-medium border-b border-slate-200">
+                    <thead className="bg-slate-950 text-slate-400 uppercase font-medium border-b border-slate-800">
                         <tr>
                             <th className="px-6 py-4">User</th>
                             <th className="px-6 py-4">Contact</th>
@@ -136,15 +162,15 @@ export default function AdminUsersPage() {
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-800">
                         {loading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <tr key={i} className="animate-pulse">
-                                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
-                                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-32"></div></td>
-                                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-16"></div></td>
-                                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-20"></div></td>
-                                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 rounded w-12"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-slate-800 rounded w-24"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-slate-800 rounded w-32"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-slate-800 rounded w-16"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-slate-800 rounded w-20"></div></td>
+                                    <td className="px-6 py-4"><div className="h-4 bg-slate-800 rounded w-12"></div></td>
                                     <td className="px-6 py-4"></td>
                                 </tr>
                             ))
@@ -156,30 +182,30 @@ export default function AdminUsersPage() {
                             </tr>
                         ) : (
                             users.map((user) => (
-                                <tr key={user._id} className="hover:bg-slate-50 transition-colors group">
+                                <tr key={user._id} className="hover:bg-slate-800/50 transition-colors group">
                                     <td className="px-6 py-4">
-                                        <div className="font-medium text-slate-900">{user.name || "N/A"}</div>
+                                        <div className="font-medium text-slate-200">{user.name || "N/A"}</div>
                                         <div className="text-xs text-slate-500">Joined {format(new Date(user.createdAt), 'MMM yyyy')}</div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="text-slate-900">{user.phone}</div>
+                                        <div className="text-slate-300">{user.phone}</div>
                                         <div className="text-slate-500 text-xs">{user.email}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         {user.role === 'ADMIN' ? (
-                                            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none">
+                                            <Badge className="bg-purple-900/50 text-purple-300 hover:bg-purple-900/50 border-none">
                                                 <Shield className="w-3 h-3 mr-1" /> Admin
                                             </Badge>
                                         ) : (
-                                            <span className="text-slate-600">Customer</span>
+                                            <span className="text-slate-500">Customer</span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4">
                                         <Badge variant="outline" className={`
-                                            ${user.membershipId?.name === 'PLATINUM' ? 'border-slate-800 text-slate-900 bg-slate-50' : 
-                                              user.membershipId?.name === 'GOLD' ? 'border-amber-200 text-amber-700 bg-amber-50' : 
-                                              user.membershipId?.name === 'SILVER' ? 'border-slate-300 text-slate-600 bg-slate-50' : 
-                                              'border-slate-100 text-slate-500'}
+                                            ${user.membershipId?.name === 'PLATINUM' ? 'border-slate-700 text-slate-300 bg-slate-800' : 
+                                              user.membershipId?.name === 'GOLD' ? 'border-amber-900/50 text-amber-400 bg-amber-950/20' : 
+                                              user.membershipId?.name === 'SILVER' ? 'border-slate-600 text-slate-400 bg-slate-800/50' : 
+                                              'border-slate-800 text-slate-600'}
                                         `}>
                                             {user.membershipId?.name || 'NORMAL'}
                                         </Badge>
@@ -188,7 +214,7 @@ export default function AdminUsersPage() {
                                         {user.isBlocked ? (
                                             <Badge variant="destructive">Blocked</Badge>
                                         ) : (
-                                            <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">Active</Badge>
+                                            <Badge variant="secondary" className="bg-green-950/30 text-green-400 hover:bg-green-950/30 border border-green-900">Active</Badge>
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -196,7 +222,7 @@ export default function AdminUsersPage() {
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 
-                                                className={user.isBlocked ? "text-green-600 hover:text-green-700 hover:bg-green-50" : "text-amber-600 hover:text-amber-700 hover:bg-amber-50"}
+                                                className={user.isBlocked ? "text-green-500 hover:text-green-400 hover:bg-green-900/20" : "text-amber-500 hover:text-amber-400 hover:bg-amber-900/20"}
                                                 onClick={() => toggleBlock(user._id, user.isBlocked)}
                                                 title={user.isBlocked ? "Unblock User" : "Block User"}
                                             >
@@ -206,7 +232,7 @@ export default function AdminUsersPage() {
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 
-                                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
                                                 onClick={() => setMembershipUser(user)}
                                                 title="Edit Membership"
                                             >
@@ -216,7 +242,7 @@ export default function AdminUsersPage() {
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 
-                                                className="text-red-400 hover:text-red-600 hover:bg-red-50"
+                                                className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                                                 onClick={() => deleteUser(user._id)}
                                                 title="Delete User"
                                             >
@@ -232,7 +258,7 @@ export default function AdminUsersPage() {
                 </table>
             </div>
             
-            <div className="p-4 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 text-center">
+            <div className="p-4 border-t border-slate-800 bg-slate-900 text-xs text-slate-500 text-center">
                 Showing {users.length} users
             </div>
             
@@ -280,19 +306,27 @@ function MembershipModal({ user, onClose, onSuccess }: any) {
 
     return (
          <Dialog open={!!user} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader><DialogTitle>Update Membership for {user.name}</DialogTitle></DialogHeader>
+            <DialogContent className="bg-slate-900 border-slate-800 text-slate-50">
+                <DialogHeader><DialogTitle className="text-slate-50">Update Membership for {user.name}</DialogTitle></DialogHeader>
                 <div className="space-y-4 pt-4">
-                     <p className="text-sm text-slate-500">
-                         Current Membership: <span className="font-semibold text-slate-900">{typeof user.membershipId === 'object' ? user.membershipId?.name : 'Unknown'}</span>
+                     <p className="text-sm text-slate-400">
+                         Current Membership: <span className="font-semibold text-slate-200">{typeof user.membershipId === 'object' ? user.membershipId?.name : 'Unknown'}</span>
                      </p>
                      
-                     <div className="grid gap-2">
-                         {memberships.map((m) => (
+                     <div className="grid gap-2 text-slate-200">
+                        <div 
+                                onClick={() => setSelectedId("")} // Empty string for Normal/Null
+                                className={`p-3 rounded-lg border cursor-pointer flex justify-between items-center ${!selectedId ? 'border-purple-600 bg-purple-900/20 ring-1 ring-purple-600' : 'border-slate-700 bg-slate-800 hover:border-slate-600'}`}
+                            >
+                                <div className="font-medium">NORMAL (Remove Membership)</div>
+                                <div className="text-sm text-slate-500">-</div>
+                        </div>
+
+                         {memberships.filter(m => m.name !== 'NORMAL').map((m) => (
                              <div 
                                 key={m._id} 
                                 onClick={() => setSelectedId(m._id)}
-                                className={`p-3 rounded-lg border cursor-pointer flex justify-between items-center ${selectedId === m._id ? 'border-purple-600 bg-purple-50 ring-1 ring-purple-600' : 'border-slate-200 hover:border-slate-300'}`}
+                                className={`p-3 rounded-lg border cursor-pointer flex justify-between items-center ${selectedId === m._id ? 'border-purple-600 bg-purple-900/20 ring-1 ring-purple-600' : 'border-slate-700 bg-slate-800 hover:border-slate-600'}`}
                              >
                                  <div className="font-medium">{m.name}</div>
                                  <div className="text-sm text-slate-500">₹{m.price}</div>
@@ -301,7 +335,7 @@ function MembershipModal({ user, onClose, onSuccess }: any) {
                      </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleSave}>Update User Membership</Button>
+                    <Button onClick={handleSave} className="bg-purple-600 hover:bg-purple-700 text-white">Update User Membership</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

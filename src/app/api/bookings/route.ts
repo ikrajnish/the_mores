@@ -42,9 +42,25 @@ export async function POST(req: NextRequest) {
     let membershipName = "NORMAL"; // Default
 
     if (membershipId) {
+      // Check for expiration
+      let isExpired = false;
+      if (user.membershipExpiresAt) {
+          const expiryDate = new Date(user.membershipExpiresAt);
+          if (expiryDate < new Date()) {
+              isExpired = true;
+          }
+      }
+
       const membership = await Membership.findById(membershipId);
       if (membership) {
-        membershipName = membership.name;
+        if (isExpired) {
+            membershipName = `${membership.name} (Expired)`;
+            // Fallback to NORMAL for pricing lookup
+            const normal = await Membership.findOne({ name: "NORMAL" });
+            membershipId = normal?._id || null;
+        } else {
+            membershipName = membership.name;
+        }
       } else {
         // Fallback to NORMAL if assigned membership not found
         const normal = await Membership.findOne({ name: "NORMAL" });
@@ -61,10 +77,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    const pricing = await ServicePricing.findOne({
+    let pricing = await ServicePricing.findOne({
       serviceId: service._id,
       membershipId: membershipId,
     });
+
+    // Fallback: If no pricing found OR price is 0 (and it's not a normal user), try fetching NORMAL price
+    if ((!pricing || pricing.price === 0) && membershipName !== "NORMAL") {
+        const normal = await Membership.findOne({ name: "NORMAL" });
+        if (normal) {
+             const normalPricing = await ServicePricing.findOne({
+                serviceId: service._id,
+                membershipId: normal._id
+             });
+             // Only override if normal pricing exists
+             if (normalPricing && normalPricing.price > 0) {
+                 pricing = normalPricing;
+                 // Note: We keep membershipSnapshot as the user's actual membership (e.g. GOLD)
+                 // to record that a GOLD user booked it, even if they paid normal price.
+             }
+        }
+    }
 
     if (!pricing) {
         return NextResponse.json({ error: "Pricing not found for this service and membership" }, { status: 400 });

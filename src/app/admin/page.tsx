@@ -49,15 +49,15 @@ export default function AdminDashboard() {
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
-            <Badge variant="outline" className="px-3 py-1 bg-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Admin Dashboard</h1>
+            <Badge variant="outline" className="w-fit px-3 py-1 bg-white">
                 {format(new Date(), 'PPP')}
             </Badge>
         </div>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <StatsCard 
                 title="Total Revenue" 
                 value={metrics?.totalRevenue ? `₹${metrics.totalRevenue.toLocaleString()}` : '₹0'} 
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
             />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8 mb-8">
             {/* Revenue Chart */}
             <div className="lg:col-span-2">
                  <Card className="h-full border-slate-200 shadow-sm">
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
                                         {format(new Date(booking.date), 'MMM dd, HH:mm')}
                                     </td>
                                     <td className="px-6 py-4 font-medium text-slate-900">
-                                        ₹{booking.price}
+                                        ₹{booking.pricePaid}
                                     </td>
                                     <td className="px-6 py-4">
                                         <Badge variant={booking.status === 'CONFIRMED' ? 'default' : 'secondary'}>

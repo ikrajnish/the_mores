@@ -3,10 +3,11 @@ import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import Booking from "@/models/Booking";
 import User from "@/models/User";
+import ServicePricing from "@/models/ServicePricing";
+import Membership from "@/models/Membership";
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("API: Fetching user bookings...");
     const session = await auth();
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,32 +27,42 @@ export async function GET(req: NextRequest) {
       .sort({ date: -1 })
       .lean();
 
-    // Categorize
-    // Pending: Future dates or status CONFIRMED/PAYMENT_PENDING
-    // Completed: Past dates or status COMPLETED
-    // For simplicity, let's use Date comparison
-    
-    // Actually, let's just return all and let frontend categorize, 
-    // OR return categorized. Returning categorized is nice.
-    
+    // Fetch NORMAL membership ID for price comparison
+    const normalMembership = await Membership.findOne({ name: "NORMAL" }).lean();
+    const normalMemId = normalMembership ? normalMembership._id : null;
+
+    // Enrich bookings with original price
+    // Note: This might cause N+1 query issue if list is huge, but fine for typical user history (10-50 items).
+    // Optimization: Fetch all needed ServicePricing in one go if performance becomes an issue.
+    const enrichedBookings = await Promise.all(bookings.map(async (b: any) => {
+        let originalPrice = b.pricePaid; // Default to paid if not found/same
+        
+        if (normalMemId && b.serviceId) {
+            const pricing = await ServicePricing.findOne({
+                serviceId: b.serviceId._id,
+                membershipId: normalMemId
+            }).lean();
+            if (pricing) {
+                originalPrice = pricing.price;
+            }
+        }
+        return { ...b, originalPrice };
+    }));
+
     const now = new Date();
     
-    const pending = bookings.filter(b => 
+    // @ts-ignore
+    const pending = enrichedBookings.filter(b => 
         (b.status === 'CONFIRMED' || b.status === 'PAYMENT_PENDING' || b.status === 'CREATED') && 
         new Date(b.date) >= now
     );
 
-    const completed = bookings.filter(b => 
+    // @ts-ignore
+    const completed = enrichedBookings.filter(b => 
         b.status === 'COMPLETED' || 
         (b.status === 'CONFIRMED' && new Date(b.date) < now) ||
-        b.status === 'CANCELLED' // Maybe separate cancelled? The requirement said "Pending and Completed". 
-        // Let's put Cancelled in Completed or hide them? 
-        // User request: "Pending and Completed"
-        // I'll put past bookings in Completed.
+        b.status === 'CANCELLED'
     );
-
-    // Note: status 'COMPLETED' might not be automatically set by system yet (no cron job).
-    // so checking date < now is good fallback for "Completed".
 
     return NextResponse.json({
       pending,

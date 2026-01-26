@@ -15,30 +15,30 @@ export default async function GalleryPage() {
   const items = await getGalleryItems();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Our Gallery</h1>
-          <p className="text-gray-600">
+          <h1 className="text-4xl font-bold text-slate-50 mb-4">Our Gallery</h1>
+          <p className="text-slate-400">
             A glimpse into the luxury and relaxation that awaits you at Mores Salon.
           </p>
         </div>
 
         {items.length === 0 ? (
-           <div className="text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
-             <p className="text-gray-500">Gallery coming soon.</p>
+           <div className="text-center py-20 bg-slate-800 rounded-xl border border-slate-700 shadow-sm">
+             <p className="text-slate-400">Gallery coming soon.</p>
            </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {items.map((item: any) => (
               <div 
                 key={item._id.toString()} 
-                className="relative group overflow-hidden rounded-xl bg-gray-200 aspect-square shadow-sm hover:shadow-xl transition-all duration-300"
+                className="relative group overflow-hidden rounded-xl bg-slate-800 aspect-square shadow-sm hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300"
               >
                 {item.type === 'video' ? (
-                   <div className="flex items-center justify-center h-full text-gray-500 bg-gray-100">
+                   <div className="flex items-center justify-center h-full text-slate-500 bg-slate-700">
                      <span className="text-xs">Video Placeholder</span>
                    </div>
                 ) : (

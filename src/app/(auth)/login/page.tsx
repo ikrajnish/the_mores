@@ -2,67 +2,53 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Smartphone, Mail, ShieldCheck, ArrowRight, CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"mobile" | "email" | "sso">("mobile");
-  
-  // Mobile Flow
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSendOtp = async () => {
+  const handleGoogleLogin = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/otp/send", {
-        method: "POST",
-        body: JSON.stringify({ phone }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setOtpSent(true);
-      } else {
-        setError(data.error || "Failed to send OTP");
-      }
-    } catch (err) {
-      setError("Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+        // 1. Firebase Google Sign In
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        
+        // 2. Sync with Backend
+        const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: user.displayName,
+                email: user.email,
+                photo: user.photoURL
+            })
+        });
 
-  const handleVerifyOtp = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/auth/otp/verify", {
-        method: "POST",
-        body: JSON.stringify({ phone, otp }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        // Redirect
-        if (data.user.role === 'ADMIN') {
-          router.push('/admin');
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            if (!data.user.phone) {
+                router.push('/complete-profile');
+            } else if (data.user.role === 'ADMIN') {
+                router.push('/admin');
+            } else {
+                router.push('/');
+            }
         } else {
-          router.push('/');
+            setError(data.error || "Login failed");
         }
-      } else {
-        setError(data.error || "Invalid OTP");
-      }
-    } catch (err) {
-      setError("Verify failed");
+
+    } catch (err: any) {
+        console.error(err);
+        setError(err.message || "Failed to sign in with Google");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
@@ -78,165 +64,43 @@ export default function LoginPage() {
           <p className="text-slate-500 mt-2 text-sm">Welcome back to luxury</p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex px-8 border-b border-slate-100 dark:border-slate-800">
-          <TabButton 
-            active={activeTab === "mobile"} 
-            onClick={() => setActiveTab("mobile")} 
-            label="Mobile" 
-            icon={<Smartphone className="w-4 h-4 mr-2" />} 
-          />
-          <TabButton 
-            active={activeTab === "email"} 
-            onClick={() => setActiveTab("email")} 
-            label="Email" 
-            icon={<Mail className="w-4 h-4 mr-2" />} 
-          />
-          <TabButton 
-            active={activeTab === "sso"} 
-            onClick={() => setActiveTab("sso")} 
-            label="SSO" 
-            icon={<ShieldCheck className="w-4 h-4 mr-2" />} 
-          />
-        </div>
-
         {/* Content */}
-        <div className="p-8 h-[320px] relative">
-          <AnimatePresence mode="wait">
-            
-            {/* MOBILE OTP FLOW */}
-            {activeTab === "mobile" && (
-              <motion.div
-                key="mobile"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-4"
-              >
-                {!otpSent ? (
-                  <>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Phone Number
-                      </label>
-                      <Input 
-                        placeholder="9999999999" 
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="text-lg tracking-wider"
-                      />
-                      <p className="text-xs text-slate-400">
-                        Try <strong>9999999999</strong> for Admin, <strong>8888888888</strong> for Customer.
-                      </p>
+        <div className="p-8 pt-2">
+            <div className="space-y-4">
+                <Button 
+                    onClick={handleGoogleLogin} 
+                    disabled={loading} 
+                    className="w-full h-12 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 relative"
+                >
+                    {loading ? (
+                        "Signing in..."
+                    ) : (
+                        <>
+                            <svg className="w-5 h-5 absolute left-4" viewBox="0 0 24 24">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                            </svg>
+                            Continue with Google
+                        </>
+                    )}
+                </Button>
+                
+                {error && (
+                    <div className="p-3 bg-red-50 text-red-600 text-xs rounded-md text-center">
+                        {error}
                     </div>
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <Button onClick={handleSendOtp} disabled={loading || phone.length < 10} className="w-full">
-                      {loading ? "Sending..." : "Get OTP"}
-                      {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Enter OTP
-                      </label>
-                      <Input 
-                        placeholder="123456" 
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        className="text-lg tracking-[0.5em] text-center"
-                        maxLength={6}
-                      />
-                       <p className="text-xs text-slate-400 text-center">
-                        Code sent to {phone}. (Use <strong>123456</strong>)
-                      </p>
-                    </div>
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                    <Button onClick={handleVerifyOtp} disabled={loading || otp.length < 6} className="w-full bg-pink-600 hover:bg-pink-700">
-                      {loading ? "Verifying..." : "Login"}
-                      {!loading && <CheckCircle2 className="w-4 h-4 ml-2" />}
-                    </Button>
-                    <button 
-                      onClick={() => setOtpSent(false)}
-                      className="w-full text-xs text-slate-500 mt-2 hover:underline"
-                    >
-                      Change Phone Number
-                    </button>
-                  </>
                 )}
-              </motion.div>
-            )}
 
-            {/* EMAIL MAGIC LINK FLOW */}
-            {activeTab === "email" && (
-              <motion.div
-                key="email"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-4"
-              >
-                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-blue-700 dark:text-blue-300 text-sm">
-                   Magic Link implementation requires email provider setup. This is a placeholder for the UI logic.
-                 </div>
-                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Email Address</label>
-                  <Input placeholder="user@example.com" />
-                 </div>
-                 <Button disabled className="w-full">
-                   Send Magic Link
-                 </Button>
-              </motion.div>
-            )}
-
-             {/* SSO FLOW */}
-             {activeTab === "sso" && (
-              <motion.div
-                key="sso"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-4 flex flex-col items-center justify-center h-full pt-4"
-              >
-                  <Button variant="outline" className="w-full relative h-12" onClick={() => setActiveTab('mobile')}>
-                    <span className="absolute left-4">G</span>
-                    Continue with Google
-                  </Button>
-                   <Button variant="outline" className="w-full relative h-12" onClick={() => setActiveTab('mobile')}>
-                    <span className="absolute left-4">A</span>
-                    Continue with Apple
-                  </Button>
-                  <p className="text-xs text-slate-400 text-center mt-4">
-                    SSO requires OAuth configuration.
-                  </p>
-              </motion.div>
-            )}
-
-          </AnimatePresence>
+                <p className="text-xs text-center text-slate-400">
+                    By continuing, you agree to our Terms of Service and Privacy Policy.
+                </p>
+            </div>
         </div>
       </div>
     </div>
   );
 }
 
-function TabButton({ active, onClick, label, icon }: { active: boolean; onClick: () => void; label: string; icon: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex-1 flex items-center justify-center py-3 text-sm font-medium transition-colors relative",
-        active ? "text-slate-900 dark:text-slate-100" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-      )}
-    >
-      {icon}
-      {label}
-      {active && (
-        <motion.div 
-          layoutId="activeTab"
-          className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-900 dark:bg-slate-100" 
-        />
-      )}
-    </button>
-  );
-}
+

@@ -1,7 +1,9 @@
+import { Facebook, Instagram } from "lucide-react";
+
 export function Footer() {
   return (
-    <footer className="border-t border-slate-200 bg-slate-50 py-12 dark:border-slate-800 dark:bg-slate-950">
-      <div className="container mx-auto px-4 md:px-6">
+    <footer className="border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
+      <div className="container mx-auto px-4 md:px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           
           {/* Brand */}
@@ -28,28 +30,33 @@ export function Footer() {
           {/* Contact */}
           <div className="space-y-4">
              <h3 className="font-semibold">Contact</h3>
-             <ul className="space-y-2 text-sm text-slate-500">
-               <li>123 Luxury Lane, City</li>
-               <li>+91 99999 99999</li>
-               <li>hello@mores.com</li>
-             </ul>
+             <div className="space-y-2 text-sm text-slate-500">
+               <p className="leading-relaxed">
+                 Mores the beauty destination,<br/>
+                 Near Gokul Restaurant, Kanke Road,<br/>
+                 Ranchi, Jharkhand - 834006
+               </p>
+               <p className="font-medium hover:text-purple-600 cursor-pointer">+91 81026 03450</p>
+               <p>hello@mores.com</p>
+             </div>
           </div>
 
           {/* Social / Newsletter */}
           <div className="space-y-4">
             <h3 className="font-semibold">Stay Updated</h3>
-            <div className="flex space-x-2">
-               {/* Placeholders for social icons */}
-               <div className="w-8 h-8 bg-slate-200 rounded-full dark:bg-slate-800"></div>
-               <div className="w-8 h-8 bg-slate-200 rounded-full dark:bg-slate-800"></div>
-               <div className="w-8 h-8 bg-slate-200 rounded-full dark:bg-slate-800"></div>
+            <div className="flex space-x-3">
+               <a href="#" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 group">
+                  <Facebook className="w-5 h-5 text-slate-600 dark:text-slate-400 group-hover:text-white" />
+               </a>
+               <a href="#" className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center hover:bg-pink-600 hover:text-white transition-all duration-300 group">
+                  <Instagram className="w-5 h-5 text-slate-600 dark:text-slate-400 group-hover:text-white" />
+               </a>
             </div>
           </div>
         </div>
-        
-        <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
-           © 2026 Mores Salon Application. All rights reserved.
-        </div>
+      </div>
+      <div className="w-full bg-slate-800 py-6 border-t border-slate-800 text-center text-xs text-slate-400">
+          © 2026 Mores Salon Application. All rights reserved.
       </div>
     </footer>
   );

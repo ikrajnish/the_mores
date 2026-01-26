@@ -54,19 +54,19 @@ export default function AdminGalleryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h1 className="text-3xl font-bold text-slate-900">Gallery Management</h1>
-                <p className="text-slate-500">Add or remove images and videos from the portfolio</p>
+                <h1 className="text-3xl font-bold text-slate-50">Gallery Management</h1>
+                <p className="text-slate-400">Add or remove images and videos from the portfolio</p>
             </div>
             
             <div className="flex gap-2">
                  <Link href="/admin">
-                     <Button variant="outline">Back</Button>
+                     <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">Back</Button>
                  </Link>
                  <Button onClick={() => setIsAddOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white">
                      <Plus className="w-4 h-4 mr-2" /> Add Media
@@ -79,7 +79,7 @@ export default function AdminGalleryPage() {
         ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {items.map((item) => (
-                    <div key={item._id} className="group relative aspect-square bg-slate-200 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                    <div key={item._id} className="group relative aspect-square bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-sm">
                         {item.type === 'image' ? (
                             <img src={item.mediaUrl} alt="Gallery Item" className="w-full h-full object-cover" />
                         ) : (
@@ -89,7 +89,7 @@ export default function AdminGalleryPage() {
                         )}
                         
                         {/* Overlay */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <Button 
                                 variant="destructive" 
                                 size="sm" 
@@ -100,7 +100,7 @@ export default function AdminGalleryPage() {
                             </Button>
                         </div>
                         
-                        <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-xs rounded-full flex items-center gap-1">
+                        <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/80 text-white text-xs rounded-full flex items-center gap-1 border border-white/10">
                              {item.type === 'image' ? <ImageIcon className="w-3 h-3" /> : <Video className="w-3 h-3" />}
                              <span className="capitalize">{item.type}</span>
                         </div>
@@ -109,8 +109,8 @@ export default function AdminGalleryPage() {
                 
                 {/* Empty State */}
                 {items.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-slate-500 bg-white rounded-xl border border-dashed border-slate-300">
-                        <ImageIcon className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                    <div className="col-span-full py-12 text-center text-slate-500 bg-slate-900 rounded-xl border border-dashed border-slate-700">
+                        <ImageIcon className="w-12 h-12 mx-auto mb-4 text-slate-700" />
                         <p>No items in gallery. Add some!</p>
                     </div>
                 )}

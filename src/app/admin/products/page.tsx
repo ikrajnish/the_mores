@@ -15,29 +15,29 @@ export default function AdminProductsPage() {
   const [activeTab, setActiveTab] = useState<'inventory' | 'requests'>('inventory');
   
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-950 flex flex-col">
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h1 className="text-3xl font-bold text-slate-900">Products & Inventory</h1>
-                <p className="text-slate-500">Manage products, stock, and user requests</p>
+                <h1 className="text-3xl font-bold text-slate-50">Products & Inventory</h1>
+                <p className="text-slate-400">Manage products, stock, and user requests</p>
             </div>
             
             <Link href="/admin">
-                <Button variant="outline">Back to Dashboard</Button>
+                <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">Back to Dashboard</Button>
             </Link>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 mb-6">
+        <div className="flex border-b border-slate-800 mb-6">
             <button
                 onClick={() => setActiveTab('inventory')}
                 className={`pb-4 px-6 text-sm font-medium transition-colors relative flex items-center gap-2 ${
                     activeTab === 'inventory'
-                    ? "text-purple-600 border-b-2 border-purple-600"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "text-purple-400 border-b-2 border-purple-500"
+                    : "text-slate-400 hover:text-slate-300"
                 }`}
             >
                 <Package className="w-4 h-4" /> Inventory
@@ -46,8 +46,8 @@ export default function AdminProductsPage() {
                 onClick={() => setActiveTab('requests')}
                 className={`pb-4 px-6 text-sm font-medium transition-colors relative flex items-center gap-2 ${
                     activeTab === 'requests'
-                    ? "text-purple-600 border-b-2 border-purple-600"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "text-purple-400 border-b-2 border-purple-500"
+                    : "text-slate-400 hover:text-slate-300"
                 }`}
             >
                 <ClipboardList className="w-4 h-4" /> Requests
@@ -92,15 +92,15 @@ function InventoryTab() {
     return (
         <div>
             <div className="flex justify-between mb-4">
-                <h2 className="text-xl font-semibold">Product List</h2>
-                <Button onClick={() => { setEditingProduct(null); setIsAddOpen(true); }}>
+                <h2 className="text-xl font-semibold text-slate-50">Product List</h2>
+                <Button onClick={() => { setEditingProduct(null); setIsAddOpen(true); }} className="bg-purple-600 hover:bg-purple-700 text-white">
                     <Plus className="w-4 h-4 mr-2" /> Add Product
                 </Button>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-sm overflow-hidden">
                 <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-slate-500 uppercase font-medium border-b border-slate-200">
+                    <thead className="bg-slate-950 text-slate-400 uppercase font-medium border-b border-slate-800">
                         <tr>
                             <th className="px-6 py-4">Product</th>
                             <th className="px-6 py-4">Price</th>
@@ -108,21 +108,21 @@ function InventoryTab() {
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-800">
                         {products.map(product => (
-                            <tr key={product._id} className="hover:bg-slate-50">
-                                <td className="px-6 py-4 font-medium text-slate-900">{product.name}</td>
-                                <td className="px-6 py-4">₹{product.price}</td>
+                            <tr key={product._id} className="hover:bg-slate-800/50">
+                                <td className="px-6 py-4 font-medium text-slate-50">{product.name}</td>
+                                <td className="px-6 py-4 text-slate-300">₹{product.price}</td>
                                 <td className="px-6 py-4">
-                                    <Badge variant={product.stock > 0 ? 'default' : 'destructive'}>
+                                    <Badge variant={product.stock > 0 ? 'default' : 'destructive'} className={product.stock > 0 ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" : ""}>
                                         {product.stock} in stock
                                     </Badge>
                                 </td>
                                 <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                    <Button size="sm" variant="ghost" onClick={() => { setEditingProduct(product); setIsAddOpen(true); }}>
+                                    <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800" onClick={() => { setEditingProduct(product); setIsAddOpen(true); }}>
                                         <Edit className="w-4 h-4" />
                                     </Button>
-                                    <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handleDelete(product._id)}>
+                                    <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-400 hover:bg-red-950/30" onClick={() => handleDelete(product._id)}>
                                         <Trash2 className="w-4 h-4" />
                                     </Button>
                                 </td>
@@ -174,37 +174,37 @@ function ProductModal({ isOpen, onClose, product, onSuccess }: any) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent className="bg-slate-900 border-slate-800 text-slate-50">
                 <DialogHeader>
-                    <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+                    <DialogTitle className="text-slate-50">{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Name</label>
-                        <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                        <label className="text-sm font-medium mb-1 block text-slate-300">Name</label>
+                        <Input className="bg-slate-950 border-slate-800 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-sm font-medium mb-1 block">Price</label>
-                            <Input type="number" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} />
+                            <label className="text-sm font-medium mb-1 block text-slate-300">Price</label>
+                            <Input type="number" className="bg-slate-950 border-slate-800 text-white" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} />
                         </div>
                         <div>
-                            <label className="text-sm font-medium mb-1 block">Stock</label>
-                            <Input type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} />
+                            <label className="text-sm font-medium mb-1 block text-slate-300">Stock</label>
+                            <Input type="number" className="bg-slate-950 border-slate-800 text-white" value={formData.stock} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} />
                         </div>
                     </div>
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Description</label>
-                        <Input value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                        <label className="text-sm font-medium mb-1 block text-slate-300">Description</label>
+                        <Input className="bg-slate-950 border-slate-800 text-white" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
                     </div>
                     <div>
-                        <label className="text-sm font-medium mb-1 block">Image URL</label>
-                        <Input value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} />
+                        <label className="text-sm font-medium mb-1 block text-slate-300">Image URL</label>
+                        <Input className="bg-slate-950 border-slate-800 text-white" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} />
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSubmit}>Save Product</Button>
+                    <Button variant="outline" onClick={onClose} className="border-slate-700 text-slate-300 hover:bg-slate-800">Cancel</Button>
+                    <Button onClick={handleSubmit} className="bg-purple-600 hover:bg-purple-700">Save Product</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -237,26 +237,26 @@ function RequestsTab() {
 
     return (
         <div>
-             <h2 className="text-xl font-semibold mb-4">Product Requests</h2>
+             <h2 className="text-xl font-semibold mb-4 text-slate-50">Product Requests</h2>
              <div className="grid gap-4">
                  {requests.map(req => (
-                     <div key={req._id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                     <div key={req._id} className="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between">
                          <div>
-                             <h3 className="font-semibold text-slate-900">{req.productId?.name || "Unknown Product"}</h3>
+                             <h3 className="font-semibold text-slate-50">{req.productId?.name || "Unknown Product"}</h3>
                              <div className="text-sm text-slate-500">
-                                 Request by: <span className="font-medium text-slate-700">{req.userPhone}</span>
+                                 Request by: <span className="font-medium text-slate-400">{req.userPhone}</span>
                                  {req.userId?.name && ` (${req.userId.name})`}
                              </div>
-                             <div className="text-xs text-slate-400 mt-1">
+                             <div className="text-xs text-slate-600 mt-1">
                                  {format(new Date(req.createdAt), 'PPP p')}
                              </div>
                          </div>
                          <div className="flex items-center gap-4">
-                             <Badge variant={req.status === 'FULFILLED' ? 'default' : 'secondary'}>
+                             <Badge variant={req.status === 'FULFILLED' ? 'default' : 'secondary'} className={req.status === 'FULFILLED' ? "bg-green-500/20 text-green-400" : "bg-slate-800 text-slate-400"}>
                                  {req.status}
                              </Badge>
                              {req.status === 'PENDING' && (
-                                 <Button size="sm" onClick={() => updateStatus(req._id, 'FULFILLED')}>
+                                 <Button size="sm" onClick={() => updateStatus(req._id, 'FULFILLED')} className="bg-purple-600 hover:bg-purple-700">
                                      Mark Fulfilled
                                  </Button>
                              )}

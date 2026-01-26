@@ -41,35 +41,35 @@ export function ProfileForm({ user }: { user: any }) {
   return (
     <div className="space-y-4">
        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase">Phone</label>
-          <div className="text-gray-900 font-medium">{user.phone}</div>
+          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Phone</label>
+          <div className="text-slate-50 font-medium bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-1">{user.phone}</div>
        </div>
 
        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase">Name</label>
+          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Name</label>
           {editing ? (
               <Input 
                 value={formData.name} 
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="Enter your name"
-                className="mt-1"
+                className="mt-1 bg-slate-900 border-slate-700 text-slate-50 focus:ring-purple-500"
               />
           ) : (
-              <div className="text-gray-900 font-medium">{user.name || "Not set"}</div>
+              <div className="text-slate-50 font-medium bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-1">{user.name || "Not set"}</div>
           )}
        </div>
 
        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase">Email</label>
+          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Email</label>
           {editing ? (
               <Input 
                 value={formData.email} 
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 placeholder="Enter your email"
-                className="mt-1"
+                className="mt-1 bg-slate-900 border-slate-700 text-slate-50 focus:ring-purple-500"
               />
           ) : (
-              <div className="text-gray-900 font-medium">{user.email || "Not set"}</div>
+              <div className="text-slate-50 font-medium bg-slate-800/50 p-3 rounded-lg border border-slate-700 mt-1">{user.email || "Not set"}</div>
           )}
        </div>
 
@@ -80,12 +80,12 @@ export function ProfileForm({ user }: { user: any }) {
                        {loading && <Loader2 className="w-3 h-3 animate-spin mr-2" />}
                        Save
                    </Button>
-                   <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={loading}>
-                       Cancel
-                   </Button>
+               <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={loading} className="text-slate-400 hover:text-slate-200">
+                   Cancel
+               </Button>
                </div>
            ) : (
-               <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+               <Button size="sm" variant="outline" onClick={() => setEditing(true)} className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">
                    Edit Profile
                </Button>
            )}

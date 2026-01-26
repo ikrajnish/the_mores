@@ -35,8 +35,11 @@ export async function GET(req: NextRequest) {
     // For membership filtering, we might need to find membership IDs first or populate and filter (heavier)
     // Or simpler: receive membershipId from frontend filter
     if (membership && membership !== 'ALL') {
-        // Assuming membership is the ID
-        query.membershipId = membership;
+        if (membership === 'NORMAL') {
+            query.membershipId = null; 
+        } else {
+            query.membershipId = membership;
+        }
     }
 
     const users = await User.find(query)

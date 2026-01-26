@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import Service from "@/models/Service";
@@ -44,6 +45,11 @@ export async function PUT(
             }
         }
 
+        // Revalidate cache
+        revalidatePath('/');
+        revalidatePath('/services');
+        revalidatePath('/services/[category]/[subcategory]', 'page');
+
         return NextResponse.json({ success: true, service });
     
       } catch (error) {
@@ -69,6 +75,11 @@ export async function DELETE(
         
         await Service.findByIdAndDelete(id);
         await ServicePricing.deleteMany({ serviceId: id });
+
+        // Revalidate cache
+        revalidatePath('/');
+        revalidatePath('/services');
+        revalidatePath('/services/[category]/[subcategory]', 'page');
 
         return NextResponse.json({ success: true });
     

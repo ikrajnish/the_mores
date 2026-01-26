@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IServiceCategory extends Document {
   name: string;
+  image?: string;
 }
 
 const ServiceCategorySchema: Schema<IServiceCategory> = new Schema(
@@ -10,6 +11,10 @@ const ServiceCategorySchema: Schema<IServiceCategory> = new Schema(
       type: String,
       required: true,
       unique: true,
+    },
+    image: {
+      type: String, // URL to the image
+      required: false,
     },
   },
   { timestamps: true }

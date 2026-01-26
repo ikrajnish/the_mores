@@ -5,6 +5,7 @@ export interface IMembership extends Document {
   price: number;
   description: string;
   benefits: string[];
+  durationInDays: number;
 }
 
 const MembershipSchema: Schema<IMembership> = new Schema(
@@ -20,6 +21,11 @@ const MembershipSchema: Schema<IMembership> = new Schema(
       type: Number,
       required: true,
       default: 0,
+    },
+    durationInDays: {
+      type: Number,
+      required: true,
+      default: 365, // 1 Year default
     },
     description: {
       type: String,

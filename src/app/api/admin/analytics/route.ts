@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import Booking from "@/models/Booking";
+import Transaction from "@/models/Transaction";
 import User from "@/models/User";
 import Membership from "@/models/Membership";
 import Service from "@/models/Service";
@@ -27,12 +28,22 @@ export async function GET(req: NextRequest) {
     });
 
     // 2. Total Revenue (Confirmed/Completed bookings)
-    // Aggregation pipeline for total sum
-    const revenueResult = await Booking.aggregate([
+    // 2. Total Revenue (Confirmed/Completed bookings + Transactions)
+    // Service Revenue
+    const serviceRevenueResult = await Booking.aggregate([
         { $match: { status: { $in: ['CONFIRMED', 'COMPLETED'] } } },
-        { $group: { _id: null, total: { $sum: "$price" } } }
+        { $group: { _id: null, total: { $sum: "$pricePaid" } } }
     ]);
-    const totalRevenue = revenueResult[0]?.total || 0;
+    const serviceRevenue = serviceRevenueResult[0]?.total || 0;
+
+    // Membership & Product Revenue (from Transactions)
+    const transactionRevenueResult = await Transaction.aggregate([
+        { $match: { type: { $in: ['MEMBERSHIP', 'PRODUCT'] } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+    const transactionRevenue = transactionRevenueResult[0]?.total || 0;
+
+    const totalRevenue = serviceRevenue + transactionRevenue;
 
     // 3. Membership Count
     // Group by membership tier
@@ -98,7 +109,7 @@ export async function GET(req: NextRequest) {
         {
             $group: {
                 _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-                revenue: { $sum: "$price" }
+                revenue: { $sum: "$pricePaid" }
             }
         },
         { $sort: { _id: 1 } }

@@ -42,8 +42,14 @@ export async function POST(req: NextRequest) {
     // MOCK PAYMENT PROCESS HERE
     // In a real app, verify Razorpay signature here.
     
+    // Calculate Expiry
+    const days = membership.durationInDays || 365;
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + days);
+
     // Update user
     user.membershipId = membershipId;
+    user.membershipExpiresAt = expiryDate;
     await user.save();
 
     // Log Transaction

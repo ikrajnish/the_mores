@@ -6,6 +6,7 @@ export interface IService extends Document {
   categoryId: mongoose.Types.ObjectId;
   image?: string;
   shortDescription?: string;
+  subcategory?: mongoose.Types.ObjectId;
 }
 
 const ServiceSchema: Schema<IService> = new Schema(
@@ -32,6 +33,11 @@ const ServiceSchema: Schema<IService> = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'ServiceCategory',
       required: true,
+    },
+    subcategory: {
+      type: Schema.Types.ObjectId,
+      ref: 'Subcategory', 
+      required: false,
     },
   },
   { timestamps: true }

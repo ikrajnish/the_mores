@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 export function useUser() {
-  const [user, setUser] = useState<{ id: string; phone: string; role: 'ADMIN' | 'CUSTOMER' } | null>(null);
+  const [user, setUser] = useState<{ id: string; name: string; email: string; phone: string; role: 'ADMIN' | 'CUSTOMER' } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -6,12 +6,12 @@ import User from "@/models/User";
 export async function GET() {
   const session = await auth();
 
-  if (!session || !session.user || !session.user.userId) {
+  if (!session || !session.user || !session.user.id) {
     return NextResponse.json({ user: null }, { status: 401 });
   }
 
   await connectDB();
-  const user = await User.findById(session.user.userId).select("-password -__v");
+  const user = await User.findById(session.user.id).select("-password -__v");
 
   if (!user) {
      return NextResponse.json({ user: null }, { status: 401 });

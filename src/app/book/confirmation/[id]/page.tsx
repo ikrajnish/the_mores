@@ -49,7 +49,7 @@ export default async function BookingConfirmationPage(props: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-grow flex items-center justify-center p-4">
