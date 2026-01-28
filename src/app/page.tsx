@@ -9,13 +9,16 @@ import Membership from "@/models/Membership";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Star, Sparkles } from "lucide-react";
+import { ServicesSection } from "@/components/home/ServicesSection";
+import { BridalSection } from "@/components/home/BridalSection";
+import { GallerySection } from "@/components/home/GallerySection";
 
 // Server Component Data Fetching
 async function getHomeData() {
   await dbConnect();
   const [categories, gallery, products, memberships] = await Promise.all([
-    ServiceCategory.find({}).lean(),
-    Gallery.find({ type: 'image' }).sort({ createdAt: -1 }).limit(4).lean(),
+    ServiceCategory.find({ name: { $not: /Bridal Packages/i } }).lean(),
+    Gallery.find({ type: 'image' }).sort({ createdAt: -1 }).limit(7).lean(),
     Product.find({}).limit(3).lean(),
     Membership.find({}).lean(), // Just to ensuring connection, mostly static
   ]);
@@ -34,7 +37,17 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const { categories, gallery, products } = await getHomeData();
+  const { categories: rawCategories, gallery: rawGallery, products } = await getHomeData();
+  
+  const categories = rawCategories.map((cat: any) => ({
+    ...cat,
+    _id: cat._id.toString(),
+  }));
+
+  const gallery = rawGallery.map((item: any) => ({
+    ...item,
+    _id: item._id.toString(),
+  }));
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -90,7 +103,7 @@ export default async function Home() {
           />
           <div className="absolute inset-0 bg-slate-900/40 z-0 bg-gradient-to-t from-slate-900 via-transparent to-slate-900/20"></div>
           <div className="relative z-10 text-center px-4 max-w-4xl mx-auto space-y-6 md:space-y-8">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter bg-gradient-to-r from-purple-300 via-pink-300 to-purple-300 bg-clip-text text-transparent leading-[1.1]">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter bg-gradient-to-r from-amber-200 via-orange-400 to-amber-200 bg-clip-text text-transparent leading-[1.1]">
               Elevate Your <br className="hidden md:block"/> Beauty
             </h1>
             <p className="text-lg md:text-2xl text-slate-200 max-w-2xl mx-auto font-light leading-relaxed">
@@ -112,94 +125,17 @@ export default async function Home() {
         </section>
 
         {/* SERVICES PREVIEW */}
-        <section className="py-16 md:py-24 container mx-auto px-4">
-           {/* Header Aligned like Gallery (Centered) */}
-           <div className="text-center max-w-2xl mx-auto mb-12 md:mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">Our Services</h2>
-              <p className="text-slate-500 text-lg">Expert care for every part of you.</p>
-           </div>
-
-          {categories.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {categories.map((cat: any) => (
-                <Link key={cat._id.toString()} href={`/services/${cat.name}`} className="group relative overflow-hidden rounded-2xl h-64 border border-slate-100 dark:border-slate-800 transition-all hover:shadow-xl hover:scale-[1.02]">
-                  {cat.image && (
-                      <Image 
-                        src={cat.image} 
-                        alt={cat.name} 
-                        fill 
-                        className="object-cover group-hover:scale-105 transition-transform duration-700" 
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                  )}
-                  <div className={`absolute inset-0 p-6 flex flex-col justify-end transition-colors ${cat.image ? 'bg-gradient-to-t from-slate-900/90 to-transparent' : 'bg-white dark:bg-slate-900'}`}>
-                    <h3 className={`text-xl font-bold mb-2 ${cat.image ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{cat.name}</h3>
-                    <div className={`flex items-center text-sm opacity-0 group-hover:opacity-100 transition-opacity ${cat.image ? 'text-slate-200' : 'text-slate-500'}`}>
-                      Explore <ArrowRight className="w-4 h-4 ml-2" />
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10 bg-white rounded-xl border border-dashed border-slate-300">
-               <p className="text-slate-500">No service categories found. Seed database to view.</p>
-            </div>
-          )}
-
-           {/* Bottom Button Aligned like Gallery */}
-           <div className="text-center mt-12">
-             <Link href="/services">
-                <Button variant="outline" className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">View All Services</Button>
-             </Link>
-           </div>
-        </section>
+        {/* SERVICES PREVIEW */}
+        <ServicesSection categories={categories} />
+        <BridalSection/>
 
         {/* GALLERY PREVIEW */}
-        <section className="py-20 text-white">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-3xl font-bold mb-4">Mores Gallery</h2>
-              <p className="text-slate-400">A glimpse into our world of style and sophistication.</p>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-               {/* Fetch from DB or use placeholders if empty */}
-               {gallery.length > 0 ? gallery.map((item: any, i: number) => (
-                 <div key={item._id.toString()} className={`aspect-square rounded-xl overflow-hidden bg-slate-800 relative ${i === 0 ? 'md:col-span-2 md:row-span-2' : ''}`}>
-                    {item.mediaUrl ? (
-                         /* eslint-disable-next-line @next/next/no-img-element */
-                      <Image 
-                        src={item.mediaUrl} 
-                        alt="Gallery" 
-                        fill 
-                        className="object-cover hover:scale-105 transition-transform duration-500" 
-                        sizes="(max-width: 768px) 50vw, 25vw"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-600">No Image</div>
-                    )}
-                 </div>
-               )) : (
-                 <>
-                   <div className="aspect-square md:col-span-2 md:row-span-2 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-500">Gallery Empty</div>
-                   <div className="aspect-square rounded-xl bg-slate-800/50"></div>
-                   <div className="aspect-square rounded-xl bg-slate-800/50"></div>
-                 </>
-               )}
-            </div>
-            <div className="text-center mt-12">
-              <Link href="/gallery">
-                 <Button variant="outline" className="border-slate-700 text-white bg-slate-400 hover:bg-slate-800">View Full Gallery</Button>
-              </Link>
-            </div>
-          </div>
-        </section>
+        {gallery.length > 0 && <GallerySection gallery={gallery} />}
 
         {/* MEMBERSHIP PREVIEW */}
         <section className="py-20 container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold mb-4">Unlock Exclusive Benefits</h2>
+            <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-amber-400 to-orange-600 bg-clip-text text-transparent inline-block">Unlock Exclusive Benefits</h2>
             <p className="text-slate-500">Join Mores Membership for special pricing and priority booking.</p>
           </div>
           
@@ -246,7 +182,7 @@ export default async function Home() {
            <div className="container mx-auto px-4">
                {/* Header Aligned like Gallery (Centered) */}
               <div className="text-center max-w-2xl mx-auto mb-16">
-                <h2 className="text-3xl font-bold mb-4">Premium Products</h2>
+                <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-amber-400 to-orange-600 bg-clip-text text-transparent inline-block">Premium Products</h2>
                 <p className="text-slate-500">Curated collection for your beauty routine.</p>
               </div>
               
@@ -268,8 +204,8 @@ export default async function Home() {
                                  <span className="text-slate-400 text-xs">No Image</span>
                              )}
                          </div>
-                         <h3 className="font-bold text-lg text-white group-hover:text-purple-400 transition-colors">{prod.name}</h3>
-                         <p className="text-purple-400 font-medium mt-1">₹{prod.price}</p>
+                         <h3 className="font-bold text-lg text-white group-hover:text-amber-400 transition-colors">{prod.name}</h3>
+                         <p className="text-amber-400 font-medium mt-1">₹{prod.price}</p>
                        </div>
                      </Link>
                    ))}

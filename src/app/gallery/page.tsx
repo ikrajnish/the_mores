@@ -20,7 +20,7 @@ export default async function GalleryPage() {
       
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h1 className="text-4xl font-bold text-slate-50 mb-4">Our Gallery</h1>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent inline-block mb-4">Our Gallery</h1>
           <p className="text-slate-400">
             A glimpse into the luxury and relaxation that awaits you at Mores Salon.
           </p>
@@ -35,7 +35,7 @@ export default async function GalleryPage() {
             {items.map((item: any) => (
               <div 
                 key={item._id.toString()} 
-                className="relative group overflow-hidden rounded-xl bg-slate-800 aspect-square shadow-sm hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300"
+                className="relative group overflow-hidden rounded-xl bg-slate-800 aspect-square shadow-sm hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300"
               >
                 {item.type === 'video' ? (
                    <div className="flex items-center justify-center h-full text-slate-500 bg-slate-700">

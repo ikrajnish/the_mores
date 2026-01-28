@@ -57,16 +57,16 @@ export default async function CategoryPage(props: PageProps) {
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-8 flex flex-col text-center">
           <Link 
             href="/services" 
-            className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-purple-400 mb-4 transition-colors"
+            className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-amber-500 mb-4 transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Services
           </Link>
           
-          <h1 className="text-3xl font-bold text-slate-50 sm:text-4xl capitalize">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent sm:text-4xl capitalize inline-block">
             {category.name}
           </h1>
           <p className="mt-2 text-slate-400">
@@ -89,7 +89,7 @@ export default async function CategoryPage(props: PageProps) {
                 href={`/services/${categoryParam}/${encodeURIComponent(sub.name)}`}
                 className="group block"
               >
-                  <div className="relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 hover:-translate-y-1 h-full min-h-[200px] flex flex-col">
+                  <div className="relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/10 hover:-translate-y-1 h-full min-h-[200px] flex flex-col">
                       {sub.image ? (
                            <div className="h-32 w-full relative bg-slate-700">
                                <img src={sub.image} alt={sub.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -101,10 +101,10 @@ export default async function CategoryPage(props: PageProps) {
                       )}
                       
                       <div className="p-4 flex flex-col items-center text-center flex-grow justify-center">
-                          <h3 className="text-lg font-semibold text-slate-50 group-hover:text-purple-400 transition-colors">
+                          <h3 className="text-lg font-semibold text-slate-50 transition-colors">
                               {sub.name}
                           </h3>
-                          <div className="mt-2 flex items-center text-xs font-medium text-slate-400 group-hover:text-purple-400 transition-colors">
+                          <div className="mt-2 flex items-center text-xs font-medium text-slate-400 transition-colors">
                               View Services <ArrowRight className="ml-1 h-3 w-3" />
                           </div>
                       </div>

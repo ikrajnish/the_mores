@@ -8,11 +8,13 @@ import { Calendar, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { useUser } from "@/hooks/useUser";
 
 function BookingContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const serviceId = searchParams.get("serviceId");
+  const { user } = useUser();
 
   const [service, setService] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -77,24 +79,51 @@ function BookingContent() {
     setError(null);
 
     try {
-      // Direct WhatsApp Redirection (No Database Entry)
-      const dateStr = format(selectedDate, 'MMM d, yyyy');
+      // 1. Save to Database
+      const dateStrIso = format(selectedDate, 'yyyy-MM-dd');
+      const res = await fetch('/api/user/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              serviceId: service._id,
+              date: dateStrIso,
+              slot: selectedSlot
+          })
+      });
+
+      if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Failed to create booking");
+      }
+
+      // 2. WhatsApp Redirection
+      const displayDate = format(selectedDate, 'MMM d, yyyy');
+      
+      // Get user from internal state or fetch fresh if needed, but we can't easily access useUser inside handleBook if it's outside scope.
+      // Wait, I should call useUser at component level. I will fix this in next step or use it here if I declared it.
+      // I need to declare useUser inside component first.
+      
       const message = encodeURIComponent(
         `Hi, I would like to book an appointment.\n\n` +
         `*Service*: ${service.name}\n` +
-        `*Date*: ${dateStr}\n` +
+        `*Date*: ${displayDate}\n` +
         `*Time*: ${selectedSlot}\n` +
-        `*Price*: ₹${service.price}\n\n` +
-        `Please confirm my slot.`
+        `*Price*: ₹${service.price}\n` +
+        (user ? `*Name*: ${user.name}\n*Phone*: ${user.phone}\n` : `*Name*: (Please enter)\n`) +
+        `\nPlease confirm my slot.`
       );
       
       const whatsappUrl = `https://wa.me/918102603450?text=${message}`;
       window.open(whatsappUrl, '_blank');
       
-      // Optional: Give feedback or redirect to home after a delay
-      // For now, let's just finish loading state
+      // Redirect to My Bookings after a short delay
+      setTimeout(() => {
+          router.push('/my-bookings');
+      }, 1000);
+
     } catch (err: any) {
-      setError("Something went wrong. Please try again.");
+      console.error(err);
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }

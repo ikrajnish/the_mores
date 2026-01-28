@@ -14,13 +14,28 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  const navItems = [
+  // Define Navigation Items based on Roles
+  const customerNavItems = [
     { label: "Home", href: "/" },
     { label: "Services", href: "/services" },
+    { label: "Products", href: "/products" },
     { label: "Gallery", href: "/gallery" },
     { label: "Memberships", href: "/memberships" },
-    { label: "Products", href: "/products" },
   ];
+
+  const adminNavItems = [
+    { label: "Dashboard", href: "/admin" },
+    { label: "Bookings", href: "/admin/bookings" },
+    { label: "Users", href: "/admin/users" },
+    { label: "Services", href: "/admin/services" },
+    { label: "Gallery", href: "/admin/gallery" },
+    { label: "Products", href: "/admin/products" },
+    { label: "Finance", href: "/admin/finance" },
+    { label: "Memberships", href: "/admin/memberships" },
+  ];
+
+  // Determine which items to show
+  const activeNavItems = user?.role === 'ADMIN' ? adminNavItems : customerNavItems;
 
   const handleLogout = async () => {
     try {
@@ -38,35 +53,22 @@ export function Navbar() {
           
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-600 bg-clip-text text-transparent">
               Mores
             </span>
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-6">
-            {user?.role === 'ADMIN' ? (
-               // Admin Links
-               <>
-                  <Link href="/admin" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Dashboard</Link>
-                  <Link href="/admin/bookings" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Bookings</Link>
-                  <Link href="/admin/users" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Users</Link>
-                  <Link href="/admin/services" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Services</Link>
-                  <Link href="/admin/gallery" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Gallery</Link>
-                  <Link href="/admin/products" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Products</Link>
-                  <Link href="/admin/finance" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Finance</Link>
-                  <Link href="/admin/memberships" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Memberships</Link>
-               </>
-            ) : (
-               // Customer Links
-               <>
-                  <Link href="/" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Home</Link>
-                  <Link href="/services" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Services</Link>
-                  <Link href="/products" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Products</Link>
-                  <Link href="/gallery" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Gallery</Link>
-                  <Link href="/memberships" className="text-sm font-medium transition-colors hover:text-purple-600 text-slate-600 dark:text-slate-400">Memberships</Link>
-               </>
-            )}
+             {activeNavItems.map((item) => (
+               <Link 
+                  key={item.href} 
+                  href={item.href} 
+                  className="text-sm font-medium transition-colors hover:text-amber-500 text-slate-600 dark:text-slate-400"
+               >
+                  {item.label}
+               </Link>
+             ))}
           </div>
 
           {/* User / Auth */}
@@ -80,8 +82,8 @@ export function Navbar() {
                      aria-label="User Menu"
                      aria-expanded={isUserMenuOpen}
                    >
-                     <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-                        <UserIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                     <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                        <UserIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                      </div>
                      <ChevronDown className="w-4 h-4 text-slate-400" />
                    </button>
@@ -96,7 +98,7 @@ export function Navbar() {
 
                         {user.role === 'ADMIN' && (
                            <Link href="/admin" onClick={() => setIsUserMenuOpen(false)}>
-                             <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer">
+                             <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-amber-500 hover:bg-amber-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer">
                                 <LayoutDashboard className="w-4 h-4" />
                                 Admin Dashboard
                              </div>
@@ -104,14 +106,12 @@ export function Navbar() {
                         )}
                         
                         <Link href="/profile" onClick={() => setIsUserMenuOpen(false)}>
-                          <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer">
+                          <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-amber-500 hover:bg-amber-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer">
                              <UserIcon className="w-4 h-4" />
                              My Profile
                           </div>
                         </Link>
                         
-
-
                         <div className="border-t border-slate-100 dark:border-slate-800 my-2"></div>
 
                         <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg dark:hover:bg-red-900/10 cursor-pointer transition-colors">
@@ -148,12 +148,12 @@ export function Navbar() {
         <div className="md:hidden absolute top-16 left-0 w-full h-[calc(100vh-4rem)] bg-white/95 backdrop-blur-xl border-t border-slate-200 dark:bg-slate-950/95 dark:border-slate-800 z-50 overflow-y-auto">
           <div className="flex flex-col p-6 space-y-6">
             <div className="flex flex-col space-y-4">
-              {navItems.map((item) => (
+              {activeNavItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className="text-lg font-medium text-slate-600 hover:text-purple-600 dark:text-slate-300 dark:hover:text-purple-400 py-2 border-b border-slate-100 dark:border-slate-800/50"
+                  className="text-lg font-medium text-slate-600 hover:text-amber-500 dark:text-slate-300 dark:hover:text-amber-400 py-2 border-b border-slate-100 dark:border-slate-800/50"
                 >
                   {item.label}
                 </Link>
@@ -165,7 +165,7 @@ export function Navbar() {
                   user ? (
                     <div className="flex flex-col gap-4">
                        <div className="flex items-center gap-3 text-base font-medium text-slate-900 dark:text-slate-50 bg-slate-100 dark:bg-slate-800/50 p-4 rounded-xl">
-                         <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                         <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
                             <UserIcon className="w-5 h-5" />
                          </div>
                          <div className="flex flex-col">
@@ -174,17 +174,6 @@ export function Navbar() {
                          </div>
                        </div>
                        
-                       {user.role === 'ADMIN' && (
-                         <div className="grid grid-cols-2 gap-2">
-                           <Link href="/admin" onClick={() => setIsOpen(false)}>
-                             <Button variant="outline" className="w-full justify-center">Dashboard</Button>
-                           </Link>
-                           <Link href="/admin/bookings" onClick={() => setIsOpen(false)}>
-                             <Button variant="outline" className="w-full justify-center">Bookings</Button>
-                           </Link>
-                         </div>
-                       )}
-
                        <Link href="/profile" onClick={() => setIsOpen(false)}>
                           <Button className="w-full justify-center bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
                              Manage Profile

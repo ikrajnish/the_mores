@@ -41,27 +41,42 @@ async function getSubcategoryServices(categoryName: string, subcategoryName: str
 
   const services = await Service.find(query).lean();
 
-  // Fetch prices for 'NORMAL' membership
-  const normalMembership = await Membership.findOne({ name: "NORMAL" });
+  // Fetch all memberships to map IDs to Names
+  const memberships = await Membership.find({}).lean();
+  const membershipMap = memberships.reduce((acc: any, m: any) => {
+    acc[m._id.toString()] = m.name;
+    return acc;
+  }, {} as Record<string, string>);
+
+  // Helper to get normal membership ID
+  const normalMembership = memberships.find(m => m.name === "NORMAL");
   
   const servicesWithPrices = await Promise.all(
     services.map(async (service) => {
-      let price = 0;
-      if (normalMembership) {
-        const pricing = await ServicePricing.findOne({
-          serviceId: service._id,
-          membershipId: normalMembership._id,
-        });
-        if (pricing) {
-          price = pricing.price;
-        }
+      // Fetch ALL prices for this service
+      const pricings = await ServicePricing.find({ serviceId: service._id }).lean();
+      
+      const prices: Record<string, number> = {};
+      
+      pricings.forEach((p) => {
+          if (p.membershipId && membershipMap[p.membershipId.toString()]) {
+             prices[membershipMap[p.membershipId.toString()]] = p.price;
+          }
+      });
+      
+      // Fallback: Ensure NORMAL price is set if available
+      let defaultPrice = 0;
+      if (normalMembership && prices["NORMAL"] === undefined) {
+         // Try to find if we missed it
       }
+      if (prices["NORMAL"]) defaultPrice = prices["NORMAL"];
 
       return {
         ...service,
         _id: service._id.toString(),
         categoryId: service.categoryId.toString(),
-        price,
+        prices, // Pass all prices
+        price: defaultPrice, // Keep for backward compat or default display
       };
     })
   );
@@ -91,16 +106,16 @@ export default async function SubcategoryPage(props: PageProps) {
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-8 flex flex-col text-center">
           <Link 
             href={`/services/${categoryParam}`}
-            className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-purple-400 mb-4 transition-colors"
+            className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-amber-500 mb-4 transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to {category.name}
           </Link>
           
-          <h1 className="text-3xl font-bold text-slate-50 sm:text-4xl capitalize">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent sm:text-4xl capitalize inline-block">
             {decodedSubcategory} Services
           </h1>
           <p className="mt-2 text-slate-400">
@@ -127,6 +142,7 @@ export default async function SubcategoryPage(props: PageProps) {
                 duration={service.duration}
                 shortDescription={service.shortDescription}
                 categoryName={categoryParam}
+                prices={service.prices}
               />
             ))}
           </div>

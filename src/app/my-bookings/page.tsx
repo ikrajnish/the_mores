@@ -98,11 +98,11 @@ export default function MyBookingsPage() {
                   <h3 className="font-semibold text-slate-50 text-lg">{booking.serviceId?.name || "Unknown Service"}</h3>
                   <div className="flex flex-wrap gap-4 mt-2 text-sm text-slate-400">
                     <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-1.5 text-purple-400" />
+                      <Calendar className="w-4 h-4 mr-1.5 text-amber-500" />
                       {format(new Date(booking.date), "MMM d, yyyy")}
                     </div>
                     <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1.5 text-purple-400" />
+                      <Clock className="w-4 h-4 mr-1.5 text-amber-500" />
                       {booking.slot}
                     </div>
                     <div className="flex items-center gap-2">
@@ -154,7 +154,7 @@ export default function MyBookingsPage() {
       <div className="min-h-screen flex flex-col bg-slate-950">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
-             <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+             <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
         </div>
         <Footer />
       </div>
@@ -166,7 +166,7 @@ export default function MyBookingsPage() {
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-8 md:py-12">
-        <h1 className="text-3xl font-bold text-slate-50 mb-8">My Bookings</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent mb-8 inline-block">My Bookings</h1>
 
         {error ? (
              <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 flex items-center">
@@ -184,7 +184,7 @@ export default function MyBookingsPage() {
                         onClick={() => setActiveTab('pending')}
                         className={`pb-4 px-6 text-sm font-medium transition-colors relative whitespace-nowrap ${
                             activeTab === 'pending'
-                            ? "text-purple-400 border-b-2 border-purple-500"
+                            ? "text-amber-500 border-b-2 border-amber-500"
                             : "text-slate-500 hover:text-slate-300"
                         }`}
                     >
@@ -194,7 +194,7 @@ export default function MyBookingsPage() {
                         onClick={() => setActiveTab('completed')}
                         className={`pb-4 px-6 text-sm font-medium transition-colors relative whitespace-nowrap ${
                             activeTab === 'completed'
-                            ? "text-purple-400 border-b-2 border-purple-500"
+                            ? "text-amber-500 border-b-2 border-amber-500"
                             : "text-slate-500 hover:text-slate-300"
                         }`}
                     >

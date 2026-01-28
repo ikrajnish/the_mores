@@ -20,7 +20,7 @@ export function ProductCard({ id, name, image, price, brand, description }: Prod
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
+    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-sm transition-all hover:shadow-xl hover:shadow-amber-500/10 hover:-translate-y-1">
       <div className="relative aspect-square overflow-hidden bg-slate-900">
         {image ? (
           <Image

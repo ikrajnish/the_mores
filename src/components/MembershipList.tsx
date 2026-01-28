@@ -36,8 +36,8 @@ export function MembershipList({ memberships }: { memberships: IMem[] }) {
     return (
         <main className="flex-grow container mx-auto px-4 py-12">
             <div className="text-center max-w-3xl mx-auto mb-16">
-                <span className="text-purple-400 font-semibold tracking-wider text-sm">MEMBERSHIPS</span>
-                <h1 className="text-4xl font-bold text-slate-50 mt-2 mb-4">Unlock Exclusive Perks</h1>
+                <h3 className="text-amber-500 font-semibold tracking-wider text-sm">MEMBERSHIPS</h3>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent mt-2 mb-4 inline-block">Unlock Exclusive Perks</h1>
                 <p className="text-slate-400">
                     Join the Mores Elite club and enjoy premium benefits, priority bookings, and significant discounts.
                 </p>

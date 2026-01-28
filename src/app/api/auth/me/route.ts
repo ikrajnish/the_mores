@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   await connectDB();
-  const user = await User.findById(session.user.id).select("-password -__v");
+  const user = await User.findById(session.user.id).select("-password -__v").populate("membershipId");
 
   if (!user) {
      return NextResponse.json({ user: null }, { status: 401 });
@@ -24,6 +24,10 @@ export async function GET() {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      membership: user.membershipId ? {
+          name: (user.membershipId as any).name,
+          id: (user.membershipId as any)._id
+      } : null
     },
   });
 }

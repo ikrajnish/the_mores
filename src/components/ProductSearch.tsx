@@ -26,7 +26,7 @@ export function ProductSearch() {
       <input
         type="text"
         placeholder="Search products..."
-        className="block w-full pl-10 pr-3 py-3 border border-slate-700 rounded-full leading-5 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+        className="block w-full pl-10 pr-3 py-3 border border-slate-700 rounded-full leading-5 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 sm:text-sm"
         onChange={(e) => handleSearch(e.target.value)}
         defaultValue={searchParams.get("q")?.toString()}
       />

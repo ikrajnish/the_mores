@@ -544,7 +544,10 @@ function SimpleNameModal({ isOpen, onClose, title, onSave, initialData }: any) {
 
 function ServiceAdminCard({ service, pricing, memberships, onEdit, onDelete }: any) {
     const normalId = memberships.find((m: any) => m.name === 'NORMAL')?._id;
-    const basePrice = pricing.find((p: any) => p.membershipId === normalId || p.membershipId?._id === normalId)?.price || 0;
+    const basePrice = pricing.find((p: any) => {
+        const pMemId = p.membershipId?._id ? String(p.membershipId._id) : String(p.membershipId);
+        return pMemId === String(normalId);
+    })?.price || 0;
 
     return (
         <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm p-5 flex flex-col">
@@ -610,9 +613,16 @@ function ServiceModal({ isOpen, onClose, isNew, service, categories, allSubcateg
 
              // Pricing
              const pMap: any = {};
+             // Helper: Find Normal Membership ID
+             const normalMem = memberships.find((m: any) => m.name === 'NORMAL');
+             const normalMemId = normalMem ? normalMem._id : null;
+
              if (service) {
                 memberships.forEach((m: any) => {
-                    const validP = allPricing.find((p: any) => p.serviceId === service._id && (p.membershipId === m._id || p.membershipId?._id === m._id));
+                    const validP = allPricing.find((p: any) => {
+                        const pMemId = p.membershipId?._id ? String(p.membershipId._id) : String(p.membershipId);
+                        return p.serviceId === service._id && pMemId === String(m._id);
+                    });
                     pMap[m._id] = validP ? validP.price : 0;
                 });
              } else {
@@ -686,15 +696,33 @@ function ServiceModal({ isOpen, onClose, isNew, service, categories, allSubcateg
                                     <Input type="number" value={formData.duration || ''} onChange={e => setFormData({...formData, duration: Number(e.target.value)})} className="bg-slate-900 border-slate-700 text-slate-50" />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block text-slate-300">Category</label>
-                                    <Input disabled value={fixedCategory?.name || "Loading..."} className="bg-slate-900/50 border-slate-700 text-slate-400" />
+                                    <label className="text-sm font-medium mb-1 block text-slate-300">Standard Price (₹)</label>
+                                    <Input 
+                                        type="number" 
+                                        value={pricingMap[memberships.find((m:any) => m.name === 'NORMAL')?._id] || ''} 
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            const normalId = memberships.find((m:any) => m.name === 'NORMAL')?._id;
+                                            if (normalId) {
+                                                setPricingMap((prev: any) => ({ ...prev, [normalId]: val }));
+                                            }
+                                        }} 
+                                        className="bg-slate-900 border-slate-700 text-slate-50" 
+                                    />
+                                    <p className="text-[10px] text-slate-500 mt-1">Updates 'NORMAL' price.</p>
                                 </div>
                              </div>
                              
-                             {/* Subcategory Selector */}
-                             <div>
-                                <label className="text-sm font-medium mb-1 block text-slate-300">Subcategory</label>
-                                <Input disabled value={fixedSubcategory?.name || "Loading..."} className="bg-slate-900/50 border-slate-700 text-slate-400" />
+                             <div className="grid grid-cols-2 gap-4 mt-4">
+                                 <div>
+                                    <label className="text-sm font-medium mb-1 block text-slate-300">Category</label>
+                                    <Input disabled value={fixedCategory?.name || "Loading..."} className="bg-slate-900/50 border-slate-700 text-slate-400" />
+                                 </div>
+                                 {/* Subcategory Selector */}
+                                 <div>
+                                    <label className="text-sm font-medium mb-1 block text-slate-300">Subcategory</label>
+                                    <Input disabled value={fixedSubcategory?.name || "Loading..."} className="bg-slate-900/50 border-slate-700 text-slate-400" />
+                                 </div>
                              </div>
 
                              <div>

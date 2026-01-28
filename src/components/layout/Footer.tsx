@@ -8,7 +8,7 @@ export function Footer() {
           
           {/* Brand */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-600 bg-clip-text text-transparent">
               Mores Salon
             </h2>
             <p className="text-sm text-slate-500 max-w-[250px]">
@@ -20,10 +20,10 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="font-semibold">Explore</h3>
             <ul className="space-y-2 text-sm text-slate-500">
-              <li><a href="/services" className="hover:text-purple-600">Services</a></li>
-              <li><a href="/memberships" className="hover:text-purple-600">Memberships</a></li>
-              <li><a href="/products" className="hover:text-purple-600">Products</a></li>
-              <li><a href="/gallery" className="hover:text-purple-600">Gallery</a></li>
+              <li><a href="/services" className="hover:text-amber-500 transition-colors">Services</a></li>
+              <li><a href="/memberships" className="hover:text-amber-500 transition-colors">Memberships</a></li>
+              <li><a href="/products" className="hover:text-amber-500 transition-colors">Products</a></li>
+              <li><a href="/gallery" className="hover:text-amber-500 transition-colors">Gallery</a></li>
             </ul>
           </div>
 
@@ -36,7 +36,7 @@ export function Footer() {
                  Near Gokul Restaurant, Kanke Road,<br/>
                  Ranchi, Jharkhand - 834006
                </p>
-               <p className="font-medium hover:text-purple-600 cursor-pointer">+91 81026 03450</p>
+               <p className="font-medium hover:text-amber-500 cursor-pointer transition-colors">+91 81026 03450</p>
                <p>hello@mores.com</p>
              </div>
           </div>

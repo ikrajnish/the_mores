@@ -84,9 +84,15 @@ export async function POST(req: NextRequest) {
         // 1. Find or Create User (Walk-in)
         let user: any = null;
         
+        // Normalize Phone: If 10 digits, prepend +91
+        let searchPhone = phone;
+        if (phone && phone.trim().length === 10 && !phone.startsWith('+')) {
+            searchPhone = `+91${phone.trim()}`;
+        }
+
         // Try finding by Phone first
-        if (phone) {
-             user = await User.findOne({ phone });
+        if (searchPhone) {
+             user = await User.findOne({ phone: searchPhone });
         }
         
         // If not found, try Email
@@ -112,7 +118,7 @@ export async function POST(req: NextRequest) {
             }
 
             user = await User.create({
-                phone,
+                phone: searchPhone,
                 email: email || undefined,
                 name: name || "Walk-in Guest",
                 role: 'CUSTOMER',

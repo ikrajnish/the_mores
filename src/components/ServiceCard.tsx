@@ -1,6 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Clock } from "lucide-react";
+import { useUser } from "@/hooks/useUser";
 
 interface ServiceCardProps {
   id: string;
@@ -10,6 +13,7 @@ interface ServiceCardProps {
   duration: number;
   shortDescription?: string;
   categoryName: string;
+  prices?: Record<string, number>;
 }
 
 export default function ServiceCard({
@@ -20,9 +24,20 @@ export default function ServiceCard({
   duration,
   shortDescription,
   categoryName,
+  prices,
 }: ServiceCardProps) {
+  const { user } = useUser();
+  
+  const membershipName = user?.membership?.name;
+  const normalPrice = prices?.["NORMAL"] || price;
+  const memberPrice = (membershipName && membershipName !== "NORMAL" && prices?.[membershipName]) 
+    ? prices[membershipName] 
+    : null;
+    
+  const showDiscount = memberPrice !== null && memberPrice < normalPrice;
+
   return (
-    <div className="group relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700 shadow-sm hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300">
+    <div className="group relative overflow-hidden rounded-xl bg-slate-800 border border-slate-700 shadow-sm hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300">
       <div className="relative h-48 w-full overflow-hidden ">
         {image ? (
           <Image
@@ -40,12 +55,26 @@ export default function ServiceCard({
 
       <div className="p-5">
         <div className="mb-3 flex items-start justify-between">
-          <h3 className="text-lg font-semibold text-slate-50 group-hover:text-purple-400 transition-colors">
+          <h3 className="text-lg font-semibold text-slate-50 transition-colors">
             {name}
           </h3>
-          <span className="shrink-0 rounded-full bg-slate-700 px-3 py-1 text-sm font-medium text-slate-300 border border-slate-600">
-            ₹{price}
-          </span>
+          
+          <div className="flex flex-col items-end">
+            {showDiscount ? (
+               <>
+                 <span className="shrink-0 rounded-full bg-amber-500/10 px-3 py-1 text-sm font-bold text-amber-500 border border-amber-500/20 mb-1">
+                   ₹{memberPrice}
+                 </span>
+                 <span className="text-xs line-through text-red-500 decoration-red-500/60 font-medium">
+                   ₹{normalPrice}
+                 </span>
+               </>
+            ) : (
+              <span className="shrink-0 rounded-full bg-slate-700 px-3 py-1 text-sm font-medium text-slate-300 border border-slate-600">
+                ₹{normalPrice}
+              </span>
+            )}
+          </div>
         </div>
 
         <p className="mb-4 text-sm text-slate-400 line-clamp-2">
@@ -60,7 +89,7 @@ export default function ServiceCard({
           
           <Link
             href={`/services/${categoryName}/item/${id}`}
-            className="text-sm font-medium text-purple-400 hover:text-purple-300 flex items-center gap-1"
+            className="text-sm font-medium text-amber-500 hover:text-amber-400 flex items-center gap-1"
           >
             View Details
             <span aria-hidden="true" className="block transition-transform group-hover:translate-x-0.5">
