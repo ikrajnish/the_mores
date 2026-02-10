@@ -219,7 +219,10 @@ export default function AdminBookingsPage() {
 }
 
 function WalkInModal({ isOpen, onClose, onSuccess }: any) {
-    const [formData, setFormData] = useState({ phone: '', email: '', name: '', serviceId: '', date: '', slot: '' });
+    const [formData, setFormData] = useState({ phone: '', email: '', name: '', date: '', slot: '' });
+    const [selectedServiceId, setSelectedServiceId] = useState('');
+    const [selectedServices, setSelectedServices] = useState<any[]>([]);
+    
     const [services, setServices] = useState<any[]>([]);
     const [pricing, setPricing] = useState<any[]>([]);
     const [loadingServices, setLoadingServices] = useState(false);
@@ -254,12 +257,39 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
             date: prev.date || format(now, 'yyyy-MM-dd'),
             slot: prev.slot || format(now, 'HH:mm') 
         }));
+        setSelectedServices([]);
+        setSelectedServiceId('');
 
     }, [isOpen]);
 
+    const handleAddService = () => {
+        if (!selectedServiceId) return;
+        const service = services.find(s => s._id === selectedServiceId);
+        if (!service) return;
+        
+        // Check duplicate
+        if (selectedServices.some(s => s._id === selectedServiceId)) {
+            alert("Service already added");
+            return;
+        }
+        
+        // Get price (approx based on NORMAL)
+        const priceObj = pricing.find((p: any) => p.serviceId === service._id && p.membershipId?.name === 'NORMAL');
+        const price = priceObj ? priceObj.price : 0;
+        
+        setSelectedServices([...selectedServices, { ...service, price }]);
+        setSelectedServiceId('');
+    };
+
+    const removeService = (id: string) => {
+        setSelectedServices(selectedServices.filter(s => s._id !== id));
+    };
+
+    const totalPrice = selectedServices.reduce((acc, s) => acc + s.price, 0);
+
     const handleSubmit = async () => {
-        if (!formData.serviceId) {
-            alert("Please select a service");
+        if (selectedServices.length === 0) {
+            alert("Please select at least one service");
             return;
         }
         if (!formData.phone && !formData.email) {
@@ -270,7 +300,10 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
         const res = await fetch('/api/admin/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
+            body: JSON.stringify({
+                ...formData,
+                serviceIds: selectedServices.map(s => s._id)
+            })
         });
         
         const data = await res.json();
@@ -279,7 +312,8 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
             onSuccess();
             onClose();
             // Reset form
-            setFormData({ phone: '', email: '', name: '', serviceId: '', date: '', slot: '' });
+            setFormData({ phone: '', email: '', name: '', date: '', slot: '' });
+            setSelectedServices([]);
         } else {
             alert(data.error || "Failed to create booking");
         }
@@ -287,7 +321,7 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-md bg-slate-900 border-slate-800 text-slate-200">
+            <DialogContent className="max-w-md bg-slate-900 border-slate-800 text-slate-200 max-h-[90vh] overflow-y-auto overflow-x-hidden">
                 <DialogHeader><DialogTitle className="text-slate-50">Walk-in Booking</DialogTitle></DialogHeader>
                 <div className="space-y-4 pt-4">
                     <div className="grid grid-cols-2 gap-2">
@@ -321,28 +355,63 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
                         />
                     </div>
                     
-                    <div>
-                        <label className="text-xs font-semibold text-slate-400 mb-1 block">Select Service</label>
-                        <select 
-                            className="w-full h-10 px-3 rounded-md border border-slate-800 bg-slate-950 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700"
-                            value={formData.serviceId}
-                            onChange={(e) => setFormData({...formData, serviceId: e.target.value})}
-                        >
-                            <option value="">-- Choose Service --</option>
-                            {loadingServices ? (
-                                <option disabled>Loading services...</option>
-                            ) : (
-                                services.map((s) => {
-                                    const priceObj = pricing.find((p: any) => p.serviceId === s._id && p.membershipId?.name === 'NORMAL');
-                                    const price = priceObj ? priceObj.price : 'N/A';
-                                    return (
-                                        <option key={s._id} value={s._id}>
-                                            {s.name} ({s.duration} mins) - ₹{price}
-                                        </option>
-                                    );
-                                })
-                            )}
-                        </select>
+                    <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
+                        <label className="text-xs font-semibold text-slate-400 mb-2 block">Services</label>
+                        
+                        <div className="flex gap-2 mb-3">
+                            <select 
+                                className="flex-1 w-full h-9 px-2 rounded-md border border-slate-800 bg-slate-900 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700 min-w-0"
+                                value={selectedServiceId}
+                                onChange={(e) => setSelectedServiceId(e.target.value)}
+                            >
+                                <option value="">-- Add Service --</option>
+                                {loadingServices ? (
+                                    <option disabled>Loading services...</option>
+                                ) : (
+                                    services.map((s) => {
+                                        const priceObj = pricing.find((p: any) => p.serviceId === s._id && p.membershipId?.name === 'NORMAL');
+                                        const price = priceObj ? priceObj.price : 'N/A';
+                                        return (
+                                            <option key={s._id} value={s._id}>
+                                                {s.name} ({s.duration} mins) - ₹{price}
+                                            </option>
+                                        );
+                                    })
+                                )}
+                            </select>
+                            <Button size="sm" onClick={handleAddService} className="bg-slate-800 hover:bg-slate-700 text-slate-200 shrink-0">
+                                Add
+                            </Button>
+                        </div>
+
+                        {/* Selected Services List */}
+                        {selectedServices.length > 0 ? (
+                            <div className="max-h-40 overflow-y-auto pr-1 space-y-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                                {selectedServices.map((s, idx) => (
+                                    <div key={`${s._id}-${idx}`} className="group flex justify-between items-center bg-slate-900 border border-slate-800 p-2.5 rounded-md text-sm hover:border-slate-700 transition-colors">
+                                        <div className="truncate pr-3">
+                                            <div className="font-medium text-slate-200 truncate">{s.name}</div>
+                                            <div className="text-xs text-slate-500 mt-0.5">₹{s.price}</div>
+                                        </div>
+                                        <button 
+                                            onClick={() => removeService(s._id)} 
+                                            className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-slate-800 rounded"
+                                            title="Remove service"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                                <div className="pt-3 pb-1 border-t border-slate-800/50 flex justify-between items-center mt-2 px-1 sticky bottom-0 bg-slate-950/95 backdrop-blur-sm">
+                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Est.</span>
+                                    <span className="text-base font-bold text-emerald-400">₹{totalPrice}</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center text-xs text-slate-600 py-4 border border-dashed border-slate-800 rounded-lg">
+                                No services added yet
+                            </div>
+                        )}
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2">
@@ -357,7 +426,7 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleSubmit} className="bg-purple-600 hover:bg-purple-700 text-white border-0">Book Appointment</Button>
+                    <Button onClick={handleSubmit} className="bg-purple-600 hover:bg-purple-700 text-white border-0 w-full">Book {selectedServices.length} Appointment(s)</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

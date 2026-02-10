@@ -71,10 +71,13 @@ export async function POST(req: NextRequest) {
     
         await connectDB();
         const body = await req.json();
-        const { serviceId, date, slot, phone, email, name } = body;
+        const { serviceId, serviceIds, date, slot, phone, email, name } = body;
 
-        if (!serviceId || !date || !slot) {
-            return NextResponse.json({ error: "Missing required fields (Service, Date, Slot)" }, { status: 400 });
+        // Handle both single and multiple services
+        const servicesToBook = serviceIds && Array.isArray(serviceIds) ? serviceIds : (serviceId ? [serviceId] : []);
+
+        if (servicesToBook.length === 0 || !date || !slot) {
+            return NextResponse.json({ error: "Missing required fields (Services, Date, Slot)" }, { status: 400 });
         }
 
         if (!phone && !email) {
@@ -101,18 +104,6 @@ export async function POST(req: NextRequest) {
         }
 
         if (!user) {
-            // Create a new customer
-            // Note: Phone is required in schema, so if we only have email, we might need a placeholder or update schema?
-            // Schema: phone: { type: String, required: true, unique: true }
-            // If user provides only EMAIL, we can't create if PHONE is required.
-            // Assumption: For now, if phone is missing but email provided, we might need to ask for phone OR use email as placeholder?
-            // Better: If schema requires phone, and user enters email only... we have a problem.
-            // Let's check schema again. Yes, phone is required.
-            // WORKAROUND: If phone missing but email present, use email as phone or error? 
-            // Reasonable to assign a placeholder phone or error. 
-            // Let's assume for Walk-in, we usually get phone. If email only, we error "Phone required for new user" or we make phone optional in schema (too risky now).
-            // Let's just use the logic: If user exists by email, great. If new, we need phone.
-            
             if (!phone) {
                 return NextResponse.json({ error: "Phone number is required for new customers" }, { status: 400 });
             }
@@ -145,36 +136,41 @@ export async function POST(req: NextRequest) {
              }
         }
 
-        // 3. Get Pricing
-        const service = await Service.findById(serviceId);
-        if (!service) return NextResponse.json({ error: "Service not found" }, { status: 404 });
+        // 3. Loop through services and create bookings
+        const createdBookings = [];
         
-        let pricing = await ServicePricing.findOne({
-            serviceId: service._id,
-            membershipId: membershipId
-        });
-
-        // Fallback to NORMAL pricing if specific membership pricing is missing
-        if (!pricing && membershipId.toString() !== normalMembership._id.toString()) {
-            console.warn(`Missing pricing for service ${service.name} and membership ${membershipName}. Falling back to NORMAL.`);
-            pricing = await ServicePricing.findOne({
+        for (const sId of servicesToBook) {
+            const service = await Service.findById(sId);
+            if (!service) continue; // Skip invalid service IDs safely
+            
+            let pricing = await ServicePricing.findOne({
                 serviceId: service._id,
-                membershipId: normalMembership._id
+                membershipId: membershipId
             });
+
+            // Fallback to NORMAL pricing if specific membership pricing is missing
+            if (!pricing && membershipId.toString() !== normalMembership._id.toString()) {
+                console.warn(`Missing pricing for service ${service.name} and membership ${membershipName}. Falling back to NORMAL.`);
+                pricing = await ServicePricing.findOne({
+                    serviceId: service._id,
+                    membershipId: normalMembership._id
+                });
+            }
+
+            // 4. Create Booking
+            const booking = await Booking.create({
+                userId: user._id,
+                serviceId: service._id,
+                date: new Date(date),
+                slot,
+                pricePaid: pricing?.price || 0,
+                membershipSnapshot: membershipName,
+                status: "CONFIRMED"
+            });
+            createdBookings.push(booking);
         }
 
-        // 4. Create Booking
-        const booking = await Booking.create({
-            userId: user._id,
-            serviceId: service._id,
-            date: new Date(date),
-            slot,
-            pricePaid: pricing?.price || 0, // Fallback
-            membershipSnapshot: membershipName,
-            status: "CONFIRMED"
-        });
-
-        return NextResponse.json({ success: true, booking });
+        return NextResponse.json({ success: true, bookings: createdBookings });
     
       } catch (error: any) {
         console.error("Create Walk-in Error:", error);
