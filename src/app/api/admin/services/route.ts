@@ -6,7 +6,7 @@ import Service from "@/models/Service";
 import ServicePricing from "@/models/ServicePricing";
 import ServiceCategory from "@/models/ServiceCategory"; 
 import { serviceSchema } from "@/lib/validations";
-// import Membership from "@/models/Membership"; // Not needed if just populating
+import "@/models/Membership";
 
 export async function GET(req: NextRequest) {
     try {

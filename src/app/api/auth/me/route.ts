@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
+import "@/models/Membership";
 
 export async function GET() {
   const session = await auth();
