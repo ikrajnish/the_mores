@@ -24,9 +24,13 @@ export async function GET() {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      image: user.image,
+      membershipExpiresAt: user.membershipExpiresAt,
+      benefitsUsage: user.benefitsUsage,
       membership: user.membershipId ? {
           name: (user.membershipId as any).name,
-          id: (user.membershipId as any)._id
+          id: (user.membershipId as any)._id,
+          benefits: (user.membershipId as any).benefits
       } : null
     },
   });

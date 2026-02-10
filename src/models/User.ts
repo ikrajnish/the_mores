@@ -1,7 +1,15 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
+export interface IBenefitUsage {
+  benefitCode: string;
+  isConsumed: boolean;
+  consumedAt?: Date;
+  consumedByAdminId?: mongoose.Types.ObjectId;
+  notes?: string; // e.g. "Used for Dandruff Treatment"
+}
+
 export interface IUser extends Document {
-  phone: string;
+  phone?: string;
   name?: string;
   image?: string;
   email?: string;
@@ -9,9 +17,18 @@ export interface IUser extends Document {
   isBlocked: boolean;
   membershipId: mongoose.Types.ObjectId | null;
   membershipExpiresAt?: Date | null;
+  benefitsUsage: IBenefitUsage[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const BenefitUsageSchema = new Schema({
+    benefitCode: { type: String, required: true },
+    isConsumed: { type: Boolean, default: false },
+    consumedAt: { type: Date },
+    consumedByAdminId: { type: Schema.Types.ObjectId, ref: 'User' },
+    notes: { type: String }
+}, { _id: false });
 
 const UserSchema: Schema<IUser> = new Schema(
   {
@@ -53,11 +70,17 @@ const UserSchema: Schema<IUser> = new Schema(
       type: Date,
       default: null,
     },
+    benefitsUsage: {
+        type: [BenefitUsageSchema],
+        default: []
+    }
   },
   { timestamps: true }
 );
 
-const User: Model<IUser> =
-  mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+if (mongoose.models.User) {
+    delete mongoose.models.User;
+}
+const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 
 export default User;

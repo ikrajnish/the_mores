@@ -221,6 +221,7 @@ export default function AdminBookingsPage() {
 function WalkInModal({ isOpen, onClose, onSuccess }: any) {
     const [formData, setFormData] = useState({ phone: '', email: '', name: '', serviceId: '', date: '', slot: '' });
     const [services, setServices] = useState<any[]>([]);
+    const [pricing, setPricing] = useState<any[]>([]);
     const [loadingServices, setLoadingServices] = useState(false);
     
     useEffect(() => {
@@ -234,6 +235,9 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
                  const data = await res.json();
                  if (data.services) {
                      setServices(data.services);
+                 }
+                 if (data.pricing) {
+                     setPricing(data.pricing);
                  }
              } catch (err) {
                  console.error("Failed to load services", err);
@@ -328,11 +332,15 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
                             {loadingServices ? (
                                 <option disabled>Loading services...</option>
                             ) : (
-                                services.map((s) => (
-                                    <option key={s._id} value={s._id}>
-                                        {s.name} ({s.duration} mins)
-                                    </option>
-                                ))
+                                services.map((s) => {
+                                    const priceObj = pricing.find((p: any) => p.serviceId === s._id && p.membershipId?.name === 'NORMAL');
+                                    const price = priceObj ? priceObj.price : 'N/A';
+                                    return (
+                                        <option key={s._id} value={s._id}>
+                                            {s.name} ({s.duration} mins) - ₹{price}
+                                        </option>
+                                    );
+                                })
                             )}
                         </select>
                     </div>

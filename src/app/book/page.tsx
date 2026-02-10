@@ -108,7 +108,7 @@ function BookingContent() {
         `*Service*: ${service.name}\n` +
         `*Date*: ${displayDate}\n` +
         `*Time*: ${selectedSlot}\n` +
-        `*Price*: ₹${service.price}\n` +
+        // Price hidden from message
         (user ? `*Name*: ${user.name}\n*Phone*: ${user.phone}\n` : `*Name*: (Please enter)\n`) +
         `\nPlease confirm my slot.`
       );
@@ -167,10 +167,7 @@ function BookingContent() {
                     {service.duration} mins
                 </div>
 
-                <div className="border-t border-slate-800 pt-4 flex items-center justify-between">
-                    <span className="text-slate-400">Total Price</span>
-                    <span className="text-xl font-bold text-amber-500">₹{service.price}</span>
-                </div>
+                {/* Price Hidden */}
             </div>
         </div>
 

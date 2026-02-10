@@ -5,12 +5,12 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/useUser";
 
-import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Calendar, ChevronDown } from "lucide-react";
+import { Menu, X, User as UserIcon, LogOut, LayoutDashboard, Calendar, ChevronDown, Crown } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
-  const { user, loading } = useUser();
+  const { user, loading, logout } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -27,6 +27,7 @@ export function Navbar() {
     { label: "Dashboard", href: "/admin" },
     { label: "Bookings", href: "/admin/bookings" },
     { label: "Users", href: "/admin/users" },
+    { label: "Subscriptions", href: "/admin/subscriptions" },
     { label: "Services", href: "/admin/services" },
     { label: "Gallery", href: "/admin/gallery" },
     { label: "Products", href: "/admin/products" },
@@ -37,13 +38,9 @@ export function Navbar() {
   // Determine which items to show
   const activeNavItems = user?.role === 'ADMIN' ? adminNavItems : customerNavItems;
 
+  // Use logout from context directly
   const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/';
-    } catch (error) {
-       console.error("Logout failed", error);
-    }
+      await logout();
   };
 
   return (
@@ -109,6 +106,13 @@ export function Navbar() {
                           <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-amber-500 hover:bg-amber-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer">
                              <UserIcon className="w-4 h-4" />
                              My Profile
+                          </div>
+                        </Link>
+
+                        <Link href="/my-membership" onClick={() => setIsUserMenuOpen(false)}>
+                          <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-amber-500 hover:bg-amber-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer">
+                             <Crown className="w-4 h-4" />
+                             My Membership
                           </div>
                         </Link>
                         

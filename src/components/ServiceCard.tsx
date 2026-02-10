@@ -60,20 +60,7 @@ export default function ServiceCard({
           </h3>
           
           <div className="flex flex-col items-end">
-            {showDiscount ? (
-               <>
-                 <span className="shrink-0 rounded-full bg-amber-500/10 px-3 py-1 text-sm font-bold text-amber-500 border border-amber-500/20 mb-1">
-                   ₹{memberPrice}
-                 </span>
-                 <span className="text-xs line-through text-red-500 decoration-red-500/60 font-medium">
-                   ₹{normalPrice}
-                 </span>
-               </>
-            ) : (
-              <span className="shrink-0 rounded-full bg-slate-700 px-3 py-1 text-sm font-medium text-slate-300 border border-slate-600">
-                ₹{normalPrice}
-              </span>
-            )}
+            {/* Price hidden as per request */}
           </div>
         </div>
 

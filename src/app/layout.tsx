@@ -51,6 +51,7 @@ export const metadata: Metadata = {
   },
 };
 
+import { AuthProvider } from "@/context/AuthContext";
 import GoogleAnalytics from "@/components/seo/GoogleAnalytics";
 
 export default function RootLayout({
@@ -63,8 +64,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
-        {children}
+        <AuthProvider>
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

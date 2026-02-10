@@ -149,22 +149,7 @@ export default async function ServiceDetailPage(props: PageProps) {
               </div>
 
               <div className="flex items-center gap-6 border-y border-slate-800 py-6">
-                <div className="flex flex-col">
-                   {showMemberSavings && (
-                       <span className="text-sm text-slate-500 line-through mb-1">₹{normalPrice}</span>
-                   )}
-                   <div className="flex items-center gap-2">
-                       <span className={`text-3xl font-bold ${showMemberSavings ? 'text-amber-500' : 'text-purple-400'}`}>
-                           ₹{displayPrice}
-                       </span>
-                       {showMemberSavings && (
-                           <span className="text-xs font-medium text-green-500 px-2 py-0.5 rounded bg-green-500/10">
-                               Save ₹{normalPrice - memberPrice}
-                           </span>
-                       )}
-                   </div>
-                </div>
-                <div className="h-12 w-px bg-slate-800"></div>
+                {/* Price Hidden */}
                 <div className="flex items-center text-slate-400">
                   <Clock className="w-5 h-5 mr-2 text-slate-500" />
                   <span className="font-medium">{service.duration} mins</span>

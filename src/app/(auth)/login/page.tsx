@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,6 +35,8 @@ export default function LoginPage() {
         const data = await res.json();
 
         if (res.ok && data.success) {
+            login(data.user); // Update global state immediately
+            router.refresh();
             if (!data.user.phone) {
                 router.push('/complete-profile');
             } else if (data.user.role === 'ADMIN') {

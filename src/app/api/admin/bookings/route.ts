@@ -126,25 +126,42 @@ export async function POST(req: NextRequest) {
             });
         } 
         
-        // 2. Resolve Membership (likely NORMAL for walk-in unless they have one)
-        let membershipId = user.membershipId;
+        // 2. Resolve Membership
+        const normalMembership = await Membership.findOne({ name: "NORMAL" });
+        if (!normalMembership) {
+             return NextResponse.json({ error: "System Configuration Error: NORMAL membership not found" }, { status: 500 });
+        }
+
+        let membershipId = user.membershipId || normalMembership._id;
         let membershipName = "NORMAL";
-        if (!membershipId) {
-             const normal = await Membership.findOne({ name: "NORMAL" });
-             membershipId = normal?._id || null;
-        } else {
-             const m = await Membership.findById(membershipId);
-             if (m) membershipName = m.name;
+
+        if (user.membershipId) {
+             const m = await Membership.findById(user.membershipId);
+             if (m) {
+                 membershipName = m.name;
+             } else {
+                 // User has invalid membership ID, fallback to normal
+                 membershipId = normalMembership._id;
+             }
         }
 
         // 3. Get Pricing
         const service = await Service.findById(serviceId);
         if (!service) return NextResponse.json({ error: "Service not found" }, { status: 404 });
         
-        const pricing = await ServicePricing.findOne({
+        let pricing = await ServicePricing.findOne({
             serviceId: service._id,
             membershipId: membershipId
         });
+
+        // Fallback to NORMAL pricing if specific membership pricing is missing
+        if (!pricing && membershipId.toString() !== normalMembership._id.toString()) {
+            console.warn(`Missing pricing for service ${service.name} and membership ${membershipName}. Falling back to NORMAL.`);
+            pricing = await ServicePricing.findOne({
+                serviceId: service._id,
+                membershipId: normalMembership._id
+            });
+        }
 
         // 4. Create Booking
         const booking = await Booking.create({
