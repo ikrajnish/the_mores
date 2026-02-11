@@ -3,7 +3,7 @@ import { z } from "zod";
 export const loginSchema = z.object({
   name: z.string().optional(),
   email: z.string().email(),
-  photo: z.string().url().optional().or(z.literal("")),
+  photo: z.string().url().optional().or(z.literal("")).nullable(),
 });
 
 export const serviceSchema = z.object({

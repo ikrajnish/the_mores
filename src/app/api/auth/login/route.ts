@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
             user = await User.create({
                 name: name || email.split('@')[0],
                 email,
-                image: photo,
+                image: photo || undefined,
                 role: 'CUSTOMER' // Default role
             });
         }
@@ -58,8 +58,14 @@ export async function POST(req: NextRequest) {
             } 
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Login API Error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        if (error instanceof Error) {
+            console.error(error.stack);
+        }
+        return NextResponse.json({ 
+            error: "Internal Server Error", 
+            details: error.message || "Unknown error" 
+        }, { status: 500 });
     }
 }
