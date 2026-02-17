@@ -14,7 +14,6 @@ import { Crown, Calendar, AlertCircle } from "lucide-react";
 
 async function getUserData() {
   const session = await auth();
-  console.log("Profile Page Session:", session);
   if (!session?.user) return null;
 
   await connectDB();
@@ -23,8 +22,6 @@ async function getUserData() {
   const user = await User.findOne({ 
       $or: [{ phone: phoneOrEmail }, { email: phoneOrEmail }] 
   }).populate('membershipId').lean();
-  
-  console.log("Profile Page User Found:", user ? "Yes" : "No", phoneOrEmail);
 
   if (!user) return null;
   

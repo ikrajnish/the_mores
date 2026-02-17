@@ -218,37 +218,56 @@ export default function AdminBookingsPage() {
   );
 }
 
+import { UserProfileModal } from "@/components/admin/UserProfileModal";
+
 function WalkInModal({ isOpen, onClose, onSuccess }: any) {
     const [formData, setFormData] = useState({ phone: '', email: '', name: '', date: '', slot: '' });
     const [selectedServiceId, setSelectedServiceId] = useState('');
     const [selectedServices, setSelectedServices] = useState<any[]>([]);
     
+    // New Features State
     const [services, setServices] = useState<any[]>([]);
     const [pricing, setPricing] = useState<any[]>([]);
+    const [memberships, setMemberships] = useState<any[]>([]); // Available memberships
+    const [selectedMembershipId, setSelectedMembershipId] = useState(''); // Manual override
+    const [serviceSearch, setServiceSearch] = useState(''); // Service search
+    const [foundUser, setFoundUser] = useState<any>(null); // For View Profile
+
     const [loadingServices, setLoadingServices] = useState(false);
+    
+    // Profile Modal State
+    const [profileUserId, setProfileUserId] = useState<string | null>(null);
     
     useEffect(() => {
         if (!isOpen) return;
         
-        // Fetch services for dropdown
-        const fetchServices = async () => {
+        // Fetch services & memberships
+        const fetchData = async () => {
              setLoadingServices(true);
              try {
-                 const res = await fetch('/api/admin/services');
-                 const data = await res.json();
-                 if (data.services) {
-                     setServices(data.services);
-                 }
-                 if (data.pricing) {
-                     setPricing(data.pricing);
+                 const [resServices, resMemberships] = await Promise.all([
+                     fetch('/api/admin/services'),
+                     fetch('/api/admin/memberships')
+                 ]);
+
+                 const dataServices = await resServices.json();
+                 const dataMemberships = await resMemberships.json();
+
+                 if (dataServices.services) setServices(dataServices.services);
+                 if (dataServices.pricing) setPricing(dataServices.pricing);
+                 if (dataMemberships.memberships) {
+                     setMemberships(dataMemberships.memberships);
+                     // Set default to NORMAL
+                     const normal = dataMemberships.memberships.find((m: any) => m.name === 'NORMAL');
+                     if (normal) setSelectedMembershipId(normal._id);
                  }
              } catch (err) {
-                 console.error("Failed to load services", err);
+                 console.error("Failed to load data", err);
              } finally {
                  setLoadingServices(false);
              }
         };
-        fetchServices();
+        fetchData();
         
         // Set default date to today and time to now
         const now = new Date();
@@ -259,26 +278,103 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
         }));
         setSelectedServices([]);
         setSelectedServiceId('');
+        setServiceSearch('');
+        setFoundUser(null);
+        setProfileUserId(null);
 
     }, [isOpen]);
 
-    const handleAddService = () => {
-        if (!selectedServiceId) return;
-        const service = services.find(s => s._id === selectedServiceId);
+    // User Search Effect
+    useEffect(() => {
+        const searchUser = async () => {
+             if (!formData.phone && !formData.email) {
+                 setFoundUser(null);
+                 return;
+             }
+             const contact = formData.phone || formData.email;
+             if (contact.length < 4) return; // Min length
+
+             try {
+                 const params = new URLSearchParams();
+                 params.append('search', contact);
+                 const res = await fetch(`/api/admin/users?${params.toString()}`);
+                 const data = await res.json();
+                 if (data.users && data.users.length > 0) {
+                     // Find added exact match if possible
+                     const exact = data.users.find((u: any) => u.phone === contact || u.email === contact);
+                     setFoundUser(exact || data.users[0]);
+                     
+                     // Auto-fill name if empty
+                     if (!formData.name && (exact || data.users[0]).name) {
+                         setFormData(prev => ({ ...prev, name: (exact || data.users[0]).name }));
+                     }
+                 } else {
+                     setFoundUser(null);
+                 }
+             } catch (e) {
+                 console.error("User search failed", e);
+             }
+        };
+
+        const timer = setTimeout(searchUser, 800);
+        return () => clearTimeout(timer);
+    }, [formData.phone, formData.email]);
+
+    // Recalculate prices when membership changes
+    useEffect(() => {
+        if (selectedServices.length > 0 && selectedMembershipId) {
+            const updatedServices = selectedServices.map(s => {
+                const priceObj = pricing.find((p: any) => p.serviceId === s._id && p.membershipId?._id === selectedMembershipId);
+                // If specific price not found, fallback to NORMAL price or 0 (or keep existing if we want stricter logic)
+                // Logic: find price for this membership.
+                let newPrice = 0;
+                if (priceObj && priceObj.price > 0) {
+                    newPrice = priceObj.price;
+                } else {
+                    // Try finding NORMAL price as fallback
+                    const normalMem = memberships.find(m => m.name === 'NORMAL');
+                    if (normalMem) {
+                        const normalPrice = pricing.find((p: any) => p.serviceId === s._id && p.membershipId?._id === normalMem._id);
+                        newPrice = normalPrice ? normalPrice.price : 0;
+                    }
+                }
+                return { ...s, price: newPrice };
+            });
+            setSelectedServices(updatedServices);
+        }
+    }, [selectedMembershipId]);
+
+
+    const handleAddService = (serviceId: string) => {
+        const service = services.find(s => s._id === serviceId);
         if (!service) return;
         
         // Check duplicate
-        if (selectedServices.some(s => s._id === selectedServiceId)) {
-            alert("Service already added");
+        if (selectedServices.some(s => s._id === serviceId)) {
+            // Already handled by UI disable, but safe check
             return;
         }
         
-        // Get price (approx based on NORMAL)
-        const priceObj = pricing.find((p: any) => p.serviceId === service._id && p.membershipId?.name === 'NORMAL');
-        const price = priceObj ? priceObj.price : 0;
+        // Get price based on SELECTED Manual Membership
+        let price = 0;
+        // Try precise match first
+        const priceObj = pricing.find((p: any) => p.serviceId === service._id && p.membershipId?._id === selectedMembershipId);
+        
+        if (priceObj && priceObj.price > 0) {
+            price = priceObj.price;
+        } else {
+            // Fallback to NORMAL if price is 0 or missing
+             const normalMem = memberships.find(m => m.name === 'NORMAL');
+             if (normalMem) {
+                 const normalPrice = pricing.find((p: any) => p.serviceId === service._id && p.membershipId?._id === normalMem._id);
+                 price = normalPrice ? normalPrice.price : 0;
+             }
+        }
         
         setSelectedServices([...selectedServices, { ...service, price }]);
-        setSelectedServiceId('');
+        // Keep search active for potentially adding more similar items? 
+        // User might want to search something else.
+        // setServiceSearch(''); // Optional: keep search text
     };
 
     const removeService = (id: string) => {
@@ -302,7 +398,8 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 ...formData,
-                serviceIds: selectedServices.map(s => s._id)
+                serviceIds: selectedServices.map(s => s._id),
+                appliedMembershipId: selectedMembershipId // Send manual override
             })
         });
         
@@ -319,115 +416,201 @@ function WalkInModal({ isOpen, onClose, onSuccess }: any) {
         }
     };
 
+    // Filter services
+    const filteredServices = services.filter(s => 
+        s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+    );
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-md bg-slate-900 border-slate-800 text-slate-200 max-h-[90vh] overflow-y-auto overflow-x-hidden">
+            <DialogContent className="max-w-2xl bg-slate-900 border-slate-800 text-slate-200 max-h-[90vh] overflow-y-auto overflow-x-hidden">
                 <DialogHeader><DialogTitle className="text-slate-50">Walk-in Booking</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-4">
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                             <label className="text-xs font-semibold text-slate-400 mb-1 block">Phone <span className="text-red-500">*</span></label>
-                             <Input 
-                                placeholder="Phone Number" 
-                                value={formData.phone} 
-                                onChange={e => setFormData({...formData, phone: e.target.value})} 
-                                className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-slate-700"
-                             />
-                        </div>
-                        <div>
-                             <label className="text-xs font-semibold text-slate-400 mb-1 block">Email</label>
-                             <Input 
-                                placeholder="Email (Optional)" 
-                                value={formData.email} 
-                                onChange={e => setFormData({...formData, email: e.target.value})} 
-                                className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-slate-700"
-                             />
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                     
-                    <div>
-                        <label className="text-xs font-semibold text-slate-400 mb-1 block">Guest Name</label>
-                        <Input 
-                            placeholder="Guest Name (Optional)" 
-                            value={formData.name} 
-                            onChange={e => setFormData({...formData, name: e.target.value})} 
-                            className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-slate-700"
-                        />
-                    </div>
-                    
-                    <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
-                        <label className="text-xs font-semibold text-slate-400 mb-2 block">Services</label>
-                        
-                        <div className="flex gap-2 mb-3">
-                            <select 
-                                className="flex-1 w-full h-9 px-2 rounded-md border border-slate-800 bg-slate-900 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-700 min-w-0"
-                                value={selectedServiceId}
-                                onChange={(e) => setSelectedServiceId(e.target.value)}
-                            >
-                                <option value="">-- Add Service --</option>
-                                {loadingServices ? (
-                                    <option disabled>Loading services...</option>
-                                ) : (
-                                    services.map((s) => {
-                                        const priceObj = pricing.find((p: any) => p.serviceId === s._id && p.membershipId?.name === 'NORMAL');
-                                        const price = priceObj ? priceObj.price : 'N/A';
-                                        return (
-                                            <option key={s._id} value={s._id}>
-                                                {s.name} ({s.duration} mins) - ₹{price}
-                                            </option>
-                                        );
-                                    })
+                    {/* Left Column: Guest Info */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">Guest Details</h3>
+                        <div className="space-y-3">
+                             <div>
+                                 <label className="text-xs font-semibold text-slate-400 mb-1 block">Phone <span className="text-red-500">*</span></label>
+                                 <div className="flex gap-2">
+                                     <Input 
+                                        placeholder="Phone Number" 
+                                        value={formData.phone} 
+                                        onChange={e => setFormData({...formData, phone: e.target.value})} 
+                                        className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-slate-700"
+                                     />
+                                 </div>
+                             </div>
+                             <div>
+                                 <label className="text-xs font-semibold text-slate-400 mb-1 block">Email</label>
+                                 <Input 
+                                    placeholder="Email (Optional)" 
+                                    value={formData.email} 
+                                    onChange={e => setFormData({...formData, email: e.target.value})} 
+                                    className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-slate-700"
+                                 />
+                             </div>
+                             
+                             <div className="flex items-center justify-between">
+                                <label className="text-xs font-semibold text-slate-400 block">Guest Name</label>
+                                {foundUser && (
+                                    <div onClick={() => setProfileUserId(foundUser._id)}>
+                                        <Badge variant="outline" className="cursor-pointer hover:bg-slate-800 text-slate-400 border-slate-700">
+                                            <User className="w-3 h-3 mr-1" /> View Profile
+                                        </Badge>
+                                    </div>
                                 )}
-                            </select>
-                            <Button size="sm" onClick={handleAddService} className="bg-slate-800 hover:bg-slate-700 text-slate-200 shrink-0">
-                                Add
-                            </Button>
+                             </div>
+                             <Input 
+                                placeholder="Guest Name" 
+                                value={formData.name} 
+                                onChange={e => setFormData({...formData, name: e.target.value})} 
+                                className="bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-600 focus-visible:ring-slate-700"
+                             />
                         </div>
 
-                        {/* Selected Services List */}
-                        {selectedServices.length > 0 ? (
-                            <div className="max-h-40 overflow-y-auto pr-1 space-y-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-                                {selectedServices.map((s, idx) => (
-                                    <div key={`${s._id}-${idx}`} className="group flex justify-between items-center bg-slate-900 border border-slate-800 p-2.5 rounded-md text-sm hover:border-slate-700 transition-colors">
-                                        <div className="truncate pr-3">
-                                            <div className="font-medium text-slate-200 truncate">{s.name}</div>
-                                            <div className="text-xs text-slate-500 mt-0.5">₹{s.price}</div>
-                                        </div>
-                                        <button 
-                                            onClick={() => removeService(s._id)} 
-                                            className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-slate-800 rounded"
-                                            title="Remove service"
-                                        >
-                                            <XCircle className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                                <div className="pt-3 pb-1 border-t border-slate-800/50 flex justify-between items-center mt-2 px-1 sticky bottom-0 bg-slate-950/95 backdrop-blur-sm">
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Est.</span>
-                                    <span className="text-base font-bold text-emerald-400">₹{totalPrice}</span>
+                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-3">
+                             <h4 className="text-xs font-semibold text-slate-400 uppercase">Booking Time</h4>
+                             <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                     <label className="text-[10px] text-slate-500 mb-1 block">Date</label>
+                                     <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="h-8 bg-slate-900 border-slate-800 text-slate-200 text-xs" />
+                                </div>
+                                <div>
+                                     <label className="text-[10px] text-slate-500 mb-1 block">Time Slot</label>
+                                     <Input type="time" value={formData.slot} onChange={e => setFormData({...formData, slot: e.target.value})} className="h-8 bg-slate-900 border-slate-800 text-slate-200 text-xs" />
                                 </div>
                             </div>
-                        ) : (
-                            <div className="text-center text-xs text-slate-600 py-4 border border-dashed border-slate-800 rounded-lg">
-                                No services added yet
-                            </div>
-                        )}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                             <label className="text-xs font-semibold text-slate-400 mb-1 block">Date</label>
-                             <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="bg-slate-950 border-slate-800 text-slate-200" />
                         </div>
-                        <div>
-                             <label className="text-xs font-semibold text-slate-400 mb-1 block">Time Slot</label>
-                             <Input type="time" placeholder="Slot (e.g. 10:00 AM)" value={formData.slot} onChange={e => setFormData({...formData, slot: e.target.value})} className="bg-slate-950 border-slate-800 text-slate-200" />
+                    </div>
+
+                    {/* Right Column: Services & Pricing */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Services</h3>
+                            
+                            {/* Manual Pricing Override */}
+                            <select 
+                                value={selectedMembershipId}
+                                onChange={(e) => setSelectedMembershipId(e.target.value)}
+                                className="h-6 text-xs bg-slate-800 border-slate-700 rounded text-slate-200 px-2 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                            >
+                                {memberships.map(m => (
+                                    <option key={m._id} value={m._id}>{m.name} Price</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="p-3 bg-slate-950 rounded-lg border border-slate-800">
+                            {/* Service Search & List */}
+                            <div className="flex flex-col h-full">
+                                <div className="mb-2">
+                                    <Input 
+                                        placeholder="Search Service..." 
+                                        className="h-9 bg-slate-900 border-slate-800 text-sm"
+                                        value={serviceSearch}
+                                        onChange={(e) => setServiceSearch(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="flex-1 min-h-[250px] max-h-[300px] overflow-y-auto border border-slate-800 rounded-md bg-slate-900/50 p-1 space-y-1">
+                                    {loadingServices ? (
+                                        <div className="p-4 text-center text-slate-500 text-xs">Loading services...</div>
+                                    ) : filteredServices.length === 0 ? (
+                                        <div className="p-4 text-center text-slate-500 text-xs">No services found</div>
+                                    ) : (
+                                        filteredServices.map((s) => {
+                                            // Calculate display price based on manual selection
+                                            let price = 0;
+                                            const priceObj = pricing.find((p: any) => p.serviceId === s._id && p.membershipId?._id === selectedMembershipId);
+                                            
+                                            // Use specific price if exists AND is greater than 0
+                                            if (priceObj && priceObj.price > 0) {
+                                                price = priceObj.price;
+                                            } else {
+                                                // Fallback to NORMAL
+                                                const normalMem = memberships.find(m => m.name === 'NORMAL');
+                                                if (normalMem) {
+                                                     const p = pricing.find((pr: any) => pr.serviceId === s._id && pr.membershipId?._id === normalMem._id);
+                                                     if (p) price = p.price;
+                                                }
+                                            }
+
+                                            const isAdded = selectedServices.some(sel => sel._id === s._id);
+
+                                            return (
+                                                <div 
+                                                    key={s._id} 
+                                                    className={cn(
+                                                        "flex items-center justify-between p-2 rounded cursor-pointer transition-colors border border-transparent",
+                                                        isAdded 
+                                                            ? "bg-slate-800/50 opacity-50 cursor-not-allowed" 
+                                                            : "hover:bg-slate-800 hover:border-slate-700 bg-slate-950"
+                                                    )}
+                                                    onClick={() => !isAdded && handleAddService(s._id)}
+                                                >
+                                                    <div className="flex-1 truncate mr-2">
+                                                        <div className="font-medium text-slate-200 text-sm truncate">{s.name}</div>
+                                                        <div className="text-[10px] text-slate-500">{s.duration} mins</div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="font-bold text-slate-300 text-sm">₹{price}</div>
+                                                        {isAdded && <span className="text-[10px] text-slate-500 font-medium">Added</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Selected Services Summary */}
+                            <div className="mt-4">
+                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Selected Services ({selectedServices.length})</h4>
+                                {selectedServices.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {selectedServices.map((s, idx) => (
+                                            <div key={`${s._id}-${idx}`} className="flex justify-between items-center bg-slate-900 border border-slate-800 p-2 rounded-md text-sm">
+                                                <div className="truncate pr-3">
+                                                    <div className="font-medium text-slate-200 truncate">{s.name}</div>
+                                                    <div className="text-xs text-slate-500">₹{s.price}</div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => removeService(s._id)} 
+                                                    className="text-slate-500 hover:text-red-400 transition-colors p-1"
+                                                    title="Remove service"
+                                                >
+                                                    <XCircle className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <div className="pt-2 flex justify-between items-center mt-2 border-t border-slate-800">
+                                            <span className="text-sm font-bold text-slate-200">Total</span>
+                                            <span className="text-xl font-bold text-slate-50">₹{totalPrice}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-xs text-slate-600 py-3 border border-dashed border-slate-800 rounded-lg">
+                                        No services selected
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button onClick={handleSubmit} className="bg-purple-600 hover:bg-purple-700 text-white border-0 w-full">Book {selectedServices.length} Appointment(s)</Button>
+                <DialogFooter className="mt-4">
+                    <Button onClick={handleSubmit} className="bg-slate-50 hover:bg-slate-200 text-slate-900 border-0 w-full md:w-auto px-8">Confirm Booking</Button>
                 </DialogFooter>
+
+                {/* Nested Profile Modal */}
+                {profileUserId && (
+                    <UserProfileModal 
+                        userId={profileUserId} 
+                        isOpen={!!profileUserId} 
+                        onClose={() => setProfileUserId(null)} 
+                    />
+                )}
             </DialogContent>
         </Dialog>
     )

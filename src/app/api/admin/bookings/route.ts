@@ -123,16 +123,29 @@ export async function POST(req: NextRequest) {
              return NextResponse.json({ error: "System Configuration Error: NORMAL membership not found" }, { status: 500 });
         }
 
-        let membershipId = user.membershipId || normalMembership._id;
+        // Default to user's membership or NORMAL
+        let effectiveMembershipId = user.membershipId || normalMembership._id;
         let membershipName = "NORMAL";
 
-        if (user.membershipId) {
+        // Check for Manual Override from Admin
+        if (body.appliedMembershipId) {
+             effectiveMembershipId = body.appliedMembershipId;
+             const appliedMem = await Membership.findById(effectiveMembershipId);
+             if (appliedMem) {
+                 membershipName = appliedMem.name;
+             } else {
+                 // Invalid override ID, revert to standard logic
+                 effectiveMembershipId = user.membershipId || normalMembership._id;
+             }
+        } 
+        
+        // If no manual override, resolve name from user's membership
+        if (!body.appliedMembershipId && user.membershipId) {
              const m = await Membership.findById(user.membershipId);
              if (m) {
                  membershipName = m.name;
              } else {
-                 // User has invalid membership ID, fallback to normal
-                 membershipId = normalMembership._id;
+                 effectiveMembershipId = normalMembership._id;
              }
         }
 
@@ -145,16 +158,21 @@ export async function POST(req: NextRequest) {
             
             let pricing = await ServicePricing.findOne({
                 serviceId: service._id,
-                membershipId: membershipId
+                membershipId: effectiveMembershipId
             });
 
-            // Fallback to NORMAL pricing if specific membership pricing is missing
-            if (!pricing && membershipId.toString() !== normalMembership._id.toString()) {
-                console.warn(`Missing pricing for service ${service.name} and membership ${membershipName}. Falling back to NORMAL.`);
-                pricing = await ServicePricing.findOne({
+            // Fallback to NORMAL pricing if specific membership pricing is missing OR is 0
+            if ((!pricing || pricing.price === 0) && effectiveMembershipId.toString() !== normalMembership._id.toString()) {
+                console.warn(`Pricing 0 or missing for service ${service.name} and membership ${membershipName}. Falling back to NORMAL.`);
+                const fallbackPricing = await ServicePricing.findOne({
                     serviceId: service._id,
                     membershipId: normalMembership._id
                 });
+                
+                // Only override if fallback exists and has a price (> 0 ideally, or just exists)
+                if (fallbackPricing) {
+                    pricing = fallbackPricing;
+                }
             }
 
             // 4. Create Booking

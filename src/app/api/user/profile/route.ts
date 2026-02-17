@@ -27,8 +27,11 @@ export async function PUT(req: NextRequest) {
     await user.save();
 
     return NextResponse.json({ success: true, user: { name: user.name, email: user.email, phone: user.phone } });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Profile Update Error:", error);
+    if (error.code === 11000) {
+        return NextResponse.json({ error: "Phone number already exists. This number is linked to another account." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

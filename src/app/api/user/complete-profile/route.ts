@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
         await connectDB();
 
         // Check availability
-        const existing = await User.findOne({ phone, _id: { $ne: session.user.id } });
+        const existing = await User.findOne({ phone });
         if (existing) {
-             return NextResponse.json({ error: "Phone number already in use" }, { status: 400 });
+             return NextResponse.json({ error: "Phone number already exists. This number is linked to another account." }, { status: 409 });
         }
 
         await User.findByIdAndUpdate(session.user.id, { 

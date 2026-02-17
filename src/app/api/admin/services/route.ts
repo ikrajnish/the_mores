@@ -5,6 +5,7 @@ import connectDB from "@/lib/db";
 import Service from "@/models/Service";
 import ServicePricing from "@/models/ServicePricing";
 import ServiceCategory from "@/models/ServiceCategory"; 
+import "@/models/Subcategory"; // Ensure Subcategory schema is registered
 import { serviceSchema } from "@/lib/validations";
 import "@/models/Membership";
 

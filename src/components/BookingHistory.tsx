@@ -69,12 +69,12 @@ export function BookingHistory({ bookings }: { bookings: Booking[] }) {
                   <div className="flex flex-wrap gap-4 mt-2 text-sm text-slate-400">
                     <div className="flex items-center">
                        {/* Calendar Icon */}
-                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar w-4 h-4 mr-1.5 text-purple-400"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar w-4 h-4 mr-1.5 text-slate-400"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                        {format(new Date(booking.date), "MMM d, yyyy")}
                     </div>
                     <div className="flex items-center">
                        {/* Clock Icon */}
-                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-clock w-4 h-4 mr-1.5 text-purple-400"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-clock w-4 h-4 mr-1.5 text-slate-400"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                        {booking.slot}
                     </div>
                   </div>
@@ -86,22 +86,17 @@ export function BookingHistory({ bookings }: { bookings: Booking[] }) {
                         {hasSavings && (
                             <span className="text-xs text-slate-500 line-through">₹{originalPrice}</span>
                         )}
-                        <span className={`font-bold text-lg ${hasSavings ? 'text-amber-400' : 'text-slate-200'}`}>
+                        <span className="font-bold text-lg text-slate-200">
                             ₹{booking.pricePaid}
                         </span>
                         {hasSavings && (
-                            <span className="text-[10px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded mt-0.5 border border-green-500/20">
+                            <span className="text-[10px] text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded mt-0.5 border border-slate-700">
                                 Member Price
                             </span>
                         )}
                   </div>
                   
-                  <Badge variant={booking.status === 'CONFIRMED' ? 'default' : 'secondary'} className={
-                      booking.status === 'CONFIRMED' ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20" : 
-                      booking.status === 'COMPLETED' ? "bg-slate-700 text-slate-400 border-slate-600 hover:bg-slate-700" :
-                      booking.status === 'CANCELLED' ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20" :
-                      "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                  }>
+                  <Badge variant="outline" className="border-slate-700 text-slate-300">
                     {booking.status}
                   </Badge>
               </div>
