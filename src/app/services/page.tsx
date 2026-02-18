@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import connectDB from "@/lib/db";
@@ -129,7 +130,9 @@ export default async function ServicesPage() {
           </p>
         </div>
 
-        <ServicesExplorer categories={hierarchy} />
+        <Suspense fallback={<div className="text-center py-20 text-slate-500">Loading services explorer...</div>}>
+          <ServicesExplorer categories={hierarchy} />
+        </Suspense>
       </main>
       
       <Footer />

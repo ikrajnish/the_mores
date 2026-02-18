@@ -50,7 +50,7 @@ export default function ServicesExplorer({ categories }: ServicesExplorerProps) 
     : categories[0];
 
   const [activeCategoryId, setActiveCategoryId] = useState<string>(
-    initialCategory ? initialCategory._id : (categories.length > 0 ? categories[0]._id : "")
+    initialCategory?._id || categories[0]?._id || ""
   );
   const [searchQuery, setSearchQuery] = useState("");
 

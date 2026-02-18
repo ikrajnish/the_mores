@@ -8,7 +8,7 @@ import User from "@/models/User";
 import Service from "@/models/Service";
 import ServicePricing from "@/models/ServicePricing";
 import Membership from "@/models/Membership";
-import { BookingDTO, ApiErrorDTO } from "@/types";
+import { BookingDTO, ApiErrorDTO, ServiceDTO } from "@/types";
 
 // Validation Schema
 const bookingCreateSchema = z.object({
@@ -44,7 +44,6 @@ export async function GET(req: NextRequest) {
         let originalPrice = b.pricePaid;
         
         // Type guard for populated service
-        // @ts-expect-error - Mongoose population typing is complex, trusting runtime check
         const serviceIdRaw = b.serviceId as any; 
         const serviceIdStr = serviceIdRaw._id?.toString() || serviceIdRaw.toString();
 
@@ -58,15 +57,26 @@ export async function GET(req: NextRequest) {
             }
         }
 
+
+        const serviceDTO: ServiceDTO | string = serviceIdRaw && typeof serviceIdRaw === 'object' && '_id' in serviceIdRaw
+            ? {
+                _id: serviceIdRaw._id.toString(),
+                name: serviceIdRaw.name,
+                duration: serviceIdRaw.duration,
+                image: serviceIdRaw.image,
+                price: undefined // Not in populated fields, but part of DTO
+            }
+            : serviceIdStr;
+
         return {
           _id: b._id.toString(),
           userId: b.userId.toString(),
-          serviceId: serviceIdRaw, // Keep populated object
+          serviceId: serviceDTO,
           date: new Date(b.date).toISOString(),
           slot: b.slot,
           status: b.status as any, // Cast to BookingStatus enum
           pricePaid: b.pricePaid,
-          membershipSnapshot: b.membershipSnapshot,
+          membershipSnapshot: b.membershipSnapshot || undefined,
           originalPrice,
           createdAt: b.createdAt ? new Date(b.createdAt).toISOString() : new Date().toISOString()
         };
@@ -109,7 +119,8 @@ export async function POST(req: NextRequest) {
     const validation = bookingCreateSchema.safeParse(bodyRaw);
 
     if (!validation.success) {
-      return NextResponse.json({ error: validation.error.errors[0].message }, { status: 400 });
+      const firstError = (validation.error as any).errors?.[0]?.message || "Invalid input";
+      return NextResponse.json({ error: firstError }, { status: 400 });
     }
 
     const { serviceId, date, slot } = validation.data;
