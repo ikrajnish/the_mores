@@ -184,6 +184,13 @@ export function Navbar() {
                           </Button>
                        </Link>
 
+                       <Link href="/my-membership" onClick={() => setIsOpen(false)}>
+                          <Button variant="outline" className="w-full justify-center border-slate-200 dark:border-slate-800">
+                             <Crown className="w-4 h-4 mr-2 text-amber-500" />
+                             My Membership
+                          </Button>
+                       </Link>
+
                        <Button variant="ghost" className="w-full justify-center text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10" onClick={handleLogout}>
                           Log Out
                        </Button>

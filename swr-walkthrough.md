@@ -48,4 +48,6 @@ A **WhatsApp Link** will appear below the error, allowing them to pre-fill a mes
 - **Fixes Applied**:
     - **API Hardening**: Zod validation error handling fixed in `api/user/bookings`.
     - **Frontend**: Strict type handling in `ServicesExplorer` using optional chaining.
+    - **Frontend**: Added 'My Membership' to mobile navigation menu.
+    - **API**: Updated Admin Bookings default sort to show latest bookings first (`createdAt: -1`).
     - **Routing**: Added `<Suspense>` boundary to `ServicesPage` for `useSearchParams`.

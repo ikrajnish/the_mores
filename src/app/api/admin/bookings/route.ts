@@ -32,14 +32,16 @@ export async function GET(req: NextRequest) {
         };
     }
 
-    // Default sort
+    // Dynamic Sort
+    const sort: any = date ? { slot: 1 } : { createdAt: -1 };
+
     const bookings = await Booking.find(query)
         .populate({
             path: 'userId',
             select: 'name phone email'
         })
         .populate('serviceId', 'name duration')
-        .sort({ date: -1, slot: 1 });
+        .sort(sort);
 
     // Client-side search (lighter than complex aggregation for now if list isn't huge)
     // database search for populated fields is complex in simple find().
