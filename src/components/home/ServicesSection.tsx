@@ -87,7 +87,7 @@ export function ServicesSection({ categories }: ServicesSectionProps) {
             {categories.map((cat) => (
               <Link 
                 key={cat._id} 
-                href={`/services/${cat.name}`} 
+                href={`/services?category=${encodeURIComponent(cat.name)}`} 
                 className="relative w-[85vw] md:w-[600px] h-[55vh] md:h-[450px] rounded-[2rem] overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800 group hover:shadow-2xl transition-all duration-500 flex-shrink-0 bg-white dark:bg-slate-900"
               >
                   {cat.image ? (
@@ -110,7 +110,7 @@ export function ServicesSection({ categories }: ServicesSectionProps) {
                   
                   <div className="absolute bottom-0 left-0 w-full p-8 md:p-10 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                     <h3 className="text-3xl md:text-4xl font-bold text-white mb-3">{cat.name}</h3>
-                    <div className="flex items-center text-amber-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-4 group-hover:translate-x-0">
+                    <div className="flex items-center text-amber-400 font-bold opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 md:translate-x-4 group-hover:translate-x-0">
                        Explore Services <ArrowRight className="w-5 h-5 ml-2" />
                     </div>
                   </div>

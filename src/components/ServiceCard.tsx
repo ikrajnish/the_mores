@@ -75,10 +75,10 @@ export default function ServiceCard({
           </div>
           
           <Link
-            href={`/services/${categoryName}/item/${id}`}
+            href={`/book?serviceId=${id}`}
             className="text-sm font-medium text-amber-500 hover:text-amber-400 flex items-center gap-1"
           >
-            View Details
+            Book Now
             <span aria-hidden="true" className="block transition-transform group-hover:translate-x-0.5">
               →
             </span>

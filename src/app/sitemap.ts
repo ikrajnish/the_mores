@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const categories = await ServiceCategory.find({}).select('name updatedAt').lean();
     
     categoryRoutes = categories.map((cat: any) => ({
-      url: `${baseUrl}/services/${encodeURIComponent(cat.name)}`,
+      url: `${baseUrl}/services?category=${encodeURIComponent(cat.name)}`,
       lastModified: new Date(cat.updatedAt || new Date()),
       changeFrequency: 'weekly' as const,
       priority: 0.7,

@@ -1,12 +1,13 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import connectDB from "@/lib/db";
-import Booking from "@/models/Booking";
+import Booking, { IBooking } from "@/models/Booking";
 import Transaction from "@/models/Transaction";
-import User from "@/models/User";
+import User, { IUser } from "@/models/User";
 import Membership from "@/models/Membership";
-import Service from "@/models/Service";
 import { startOfDay, endOfDay, subDays } from "date-fns";
+import { AnalyticsResponseDTO, BookingDTO } from "@/types";
 
 export async function GET(req: NextRequest) {
   try {
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
 
     // 3. Membership Count
     // Group by membership tier
-    const membershipStats = await User.aggregate([
+    const membershipStats = await User.aggregate<{ _id: string; count: number }>([
         { 
             $lookup: {
                 from: "memberships",
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
     ]);
     
     // Format membership stats
-    const membershipCounts = {
+    const membershipCounts: { [key: string]: number; NORMAL: number; SILVER: number; GOLD: number; PLATINUM: number } = {
         NORMAL: 0,
         SILVER: 0,
         GOLD: 0,
@@ -74,14 +75,15 @@ export async function GET(req: NextRequest) {
     };
     membershipStats.forEach((stat) => {
         const name = stat._id || 'NORMAL';
-        if (name in membershipCounts) {
-           membershipCounts[name as keyof typeof membershipCounts] = stat.count;
+        if (Object.prototype.hasOwnProperty.call(membershipCounts, name)) {
+           membershipCounts[name] = stat.count;
+        } else {
+           // Handle cases where exact match isn't found or strictly fallback
+           membershipCounts.NORMAL += stat.count;
         }
     });
 
-
     // 4. Low Stock Products (Mocked for now as we don't track stock yet really)
-    // We'll just return a static number or mock list
     const lowStockCount = 3; 
 
     // 5. Recent Enrollments (Last 7 days)
@@ -90,16 +92,51 @@ export async function GET(req: NextRequest) {
     });
 
     // 6. Recent Activity (Latest 5 bookings)
-    const recentBookings = await Booking.find()
+    const recentBookingsRaw = await Booking.find()
         .sort({ createdAt: -1 })
         .limit(5)
-        .populate("userId", "name phone")
+        .populate<{ userId: IUser }>("userId", "name phone")
         .populate("serviceId", "name")
-        .lean();
+        .lean<IBooking[]>();
+
+    const recentBookings: BookingDTO[] = recentBookingsRaw.map(b => {
+        const userObj = b.userId as any;
+        const serviceObj = b.serviceId as any;
+
+        return {
+            _id: b._id.toString(),
+            userId: userObj ? {
+                id: userObj._id?.toString() || 'unknown',
+                name: userObj.name || 'Guest',
+                email: userObj.email || '',
+                phone: userObj.phone || '',
+                role: 'CUSTOMER'
+            } : {
+                id: 'deleted',
+                name: 'Deleted User',
+                email: '',
+                phone: '',
+                role: 'CUSTOMER'
+            } as any,
+            serviceId: serviceObj ? {
+                _id: serviceObj._id?.toString() || 'unknown',
+                name: serviceObj.name || 'Unknown Service',
+            } : {
+                _id: 'deleted',
+                name: 'Deleted Service'
+            } as any,
+            date: new Date(b.date).toISOString(),
+            slot: b.slot,
+            status: b.status as any,
+            pricePaid: b.pricePaid,
+            createdAt: b.createdAt ? new Date(b.createdAt).toISOString() : new Date().toISOString()
+        };
+    });
+
 
     // 7. Revenue Chart Data (Last 7 days)
     // We want daily revenue for chart
-    const last7DaysRevenue = await Booking.aggregate([
+    const last7DaysRevenue = await Booking.aggregate<{ _id: string; revenue: number }>([
         { 
             $match: { 
                 status: { $in: ['CONFIRMED', 'COMPLETED'] },
@@ -115,17 +152,20 @@ export async function GET(req: NextRequest) {
         { $sort: { _id: 1 } }
     ]);
 
-    return NextResponse.json({
+    const response: AnalyticsResponseDTO = {
         metrics: {
             todaysAppointments,
             totalRevenue,
             membershipCounts,
             lowStockCount,
-            recentEnrollments
+            recentEnrollments,
+            activeMembers: 0 // Placeholder
         },
         recentActivity: recentBookings,
         revenueChart: last7DaysRevenue
-    });
+    };
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error("Admin Analytics Error:", error);
