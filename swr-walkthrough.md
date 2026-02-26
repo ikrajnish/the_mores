@@ -50,4 +50,9 @@ A **WhatsApp Link** will appear below the error, allowing them to pre-fill a mes
     - **Frontend**: Strict type handling in `ServicesExplorer` using optional chaining.
     - **Frontend**: Added 'My Membership' to mobile navigation menu.
     - **API**: Updated Admin Bookings default sort to show latest bookings first (`createdAt: -1`).
+    - **Rendering**: Added `force-dynamic` to `/gallery` and `/` (Home) to ensure fresh content display.
+    - **Media**: Implemented `<video>` tags with autoplay/loop in Gallery and cleared obstructive overlays.
+    - **Layout**: Refactored `GallerySection` to flex-column to prevent header text overlapping with media.
+    - **Data**: Updated Homepage to fetch all gallery media types (videos + images), not just images.
+    - **Config**: Added `res.cloudinary.com` to `next.config.ts` to fix image loading errors.
     - **Routing**: Added `<Suspense>` boundary to `ServicesPage` for `useSearchParams`.

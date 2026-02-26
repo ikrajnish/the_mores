@@ -6,6 +6,7 @@ import Booking, { IBooking } from "@/models/Booking";
 import Transaction from "@/models/Transaction";
 import User, { IUser } from "@/models/User";
 import Membership from "@/models/Membership";
+import "@/models/Service"; // Fixed missing Service model registration
 import { startOfDay, endOfDay, subDays } from "date-fns";
 import { AnalyticsResponseDTO, BookingDTO } from "@/types";
 

@@ -1,17 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Instagram } from 'lucide-react';
+import { ArrowRight, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion, useScroll, useTransform } from "framer-motion";
 
 interface GalleryItem {
   _id: string;
   type: 'image' | 'video';
   mediaUrl: string;
-  thumbnailUrl?: string; // For videos
+  thumbnailUrl?: string;
   caption?: string; 
 }
 
@@ -20,103 +19,89 @@ interface GallerySectionProps {
 }
 
 export function GallerySection({ gallery }: GallerySectionProps) {
-  const targetRef = useRef<HTMLElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [scrollRange, setScrollRange] = useState(0);
-
-  // Measure content width for exact scrolling
-  useEffect(() => {
-    const updateScrollRange = () => {
-        if (scrollRef.current) {
-            const scrollWidth = scrollRef.current.scrollWidth;
-            const clientWidth = window.innerWidth;
-            const range = scrollWidth - clientWidth; 
-            setScrollRange(range > 0 ? range : 0);
-        }
-    };
-
-    updateScrollRange();
-    window.addEventListener('resize', updateScrollRange);
-    return () => window.removeEventListener('resize', updateScrollRange);
-  }, [gallery]);
-
-  const { scrollYProgress } = useScroll({
-    target: targetRef,
-  });
-
-  // Transform vertical scroll to horizontal movement
-  const x = useTransform(scrollYProgress, [0, 1], ["0px", `-${scrollRange}px`]);
-
   if (!gallery || gallery.length === 0) {
       return null;
   }
 
+  // Ensure we have at least some items to show, limit to 5 for the bento grid (1 large + 4 small)
+  const displayItems = gallery.slice(0, 5);
+
   return (
-    <section ref={targetRef} className="relative h-[300vh] bg-slate-900">
-      <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
-         {/* Fixed Header */}
-         <div className="absolute top-4 md:top-8 left-0 right-0 z-20 text-center pointer-events-none px-4">
-            <motion.div 
-               initial={{ opacity: 0, y: 20 }}
-               whileInView={{ opacity: 1, y: 0 }}
-               viewport={{ once: true }}
-               className="inline-block"
-            >
-               <h2 className="text-3xl md:text-5xl font-bold mb-3 md:mb-4 tracking-tight bg-gradient-to-r from-amber-400 to-orange-600 bg-clip-text text-transparent">Mores Gallery</h2>
-               <p className="text-sm md:text-lg text-slate-400">A glimpse into our world of style and sophistication.</p>
-            </motion.div>
-         </div>
+    <section className="py-16 px-4 md:px-8 lg:px-16">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-amber-400 to-orange-600 bg-clip-text text-transparent">Our Gallery</h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">Explore our stunning transformations and beauty services</p>
+        </div>
 
-         {/* Horizontal Scrolling Track */}
-         <motion.div 
-             ref={scrollRef}
-             style={{ x }} 
-             className="flex gap-6 md:gap-8 px-[5vw] md:px-[10vw] items-center h-full w-max pt-24 md:pt-0"
-        >
-            {gallery.map((item) => (
-               <div 
-                 key={item._id} 
-                 className="relative w-[80vw] md:w-[500px] h-[50vh] md:h-[600px] rounded-2xl overflow-hidden shadow-2xl shrink-0 group border border-slate-700 bg-slate-800"
-               >
-                  {/* Image/Media */}
-                  <div className="absolute inset-0 z-0">
-                      {item.mediaUrl ? (
-                          <Image 
-                            src={item.mediaUrl} 
-                            alt="Gallery code" 
-                            fill 
-                            className="object-cover transition-transform duration-700 group-hover:scale-105" 
-                            sizes="(max-width: 768px) 80vw, 500px"
-                          />
-                       ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-600">No Image</div>
-                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
-                  </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {displayItems.map((item, index) => {
+                // First item is large (2x2)
+                const isLarge = index === 0;
+                
+                return (
+                    <div 
+                        key={item._id} 
+                        className={`relative overflow-hidden rounded-xl cursor-pointer group ${isLarge ? 'sm:col-span-2 sm:row-span-2 aspect-square' : 'aspect-square'} border border-slate-800 bg-slate-800`}
+                    >
+                        {/* Media: Video or Image */}
+                        <div className="absolute inset-0 w-full h-full">
+                            {item.type === 'video' ? (
+                                <video
+                                    src={item.mediaUrl}
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                />
+                            ) : (
+                                <Image 
+                                    src={item.mediaUrl}
+                                    alt="Gallery Item"
+                                    fill
+                                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                    sizes={isLarge ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"}
+                                />
+                            )}
+                        </div>
 
-                  {/* Hover Overlay Content */}
-                   <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center justify-between">
-                         <span className="text-amber-400 text-sm font-bold uppercase tracking-wider">Mores Moments</span>
-                         <Instagram className="w-5 h-5 text-white" />
-                      </div>
-                   </div>
-               </div>
-            ))}
-            
-            {/* View Full Gallery Card */}
-            <div className="w-[80vw] md:w-[400px] h-[50vh] md:h-[600px] flex items-center justify-center flex-shrink-0">
-               <div className="text-center p-8">
-                  <h3 className="text-2xl font-bold text-white mb-4">See More Moments</h3>
-                  <Link href="/gallery">
-                    <Button size="lg" className="rounded-full bg-amber-500 text-slate-900 hover:bg-amber-400 transition-colors font-bold">
-                        View Full Gallery
-                    </Button>
-                  </Link>
-               </div>
-            </div>
+                        {/* Overlay Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
 
-         </motion.div>
+                        {/* Text Content */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                            <p className="text-xs font-semibold text-amber-400 mb-1 uppercase tracking-wider">Mores Moments</p>
+                            <h3 className={`font-bold text-white ${isLarge ? 'text-2xl' : 'text-lg'}`}>
+                                {item.type === 'video' ? 'Video Highlight' : (item.caption || 'Transformation')}
+                            </h3>
+                        </div>
+
+                        {/* Video Indicator */}
+                        {item.type === 'video' && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-amber-500/90 group-hover:scale-110 transition-all duration-300 border border-white/20">
+                                    <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white fill-white ml-1" />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Badge */}
+                        <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-slate-200 border border-slate-700">
+                            {item.type === 'video' ? 'Reel' : 'Photo'}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+
+        <div className="text-center mt-12">
+           <Link href="/gallery">
+             <Button size="lg" className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-slate-900 hover:shadow-lg hover:shadow-orange-500/20 hover:scale-105 transition-all duration-300 font-bold px-8">
+                View Full Gallery
+             </Button>
+           </Link>
+        </div>
       </div>
     </section>
   );

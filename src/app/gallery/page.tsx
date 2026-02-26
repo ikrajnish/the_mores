@@ -4,6 +4,8 @@ import Gallery from "@/models/Gallery";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
+export const dynamic = 'force-dynamic';
+
 async function getGalleryItems() {
   await connectDB();
   // Sort by newest first
@@ -38,9 +40,14 @@ export default async function GalleryPage() {
                 className="relative group overflow-hidden rounded-xl bg-slate-800 aspect-square shadow-sm hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300"
               >
                 {item.type === 'video' ? (
-                   <div className="flex items-center justify-center h-full text-slate-500 bg-slate-700">
-                     <span className="text-xs">Video Placeholder</span>
-                   </div>
+                   <video 
+                     src={item.mediaUrl}
+                     className="w-full h-full object-cover"
+                     autoPlay
+                     muted
+                     loop
+                     playsInline
+                   />
                 ) : (
                   <Image
                     src={item.mediaUrl}
@@ -51,8 +58,8 @@ export default async function GalleryPage() {
                   />
                 )}
                 
-                {/* Overlay on hover */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+                {/* Overlay on hover - only dark gradient for better visibility if needed, no text */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 pointer-events-none" />
               </div>
             ))}
           </div>

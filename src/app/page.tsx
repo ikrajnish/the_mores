@@ -12,13 +12,14 @@ import { ArrowRight, Star, Sparkles } from "lucide-react";
 import { ServicesSection } from "@/components/home/ServicesSection";
 import { BridalSection } from "@/components/home/BridalSection";
 import { GallerySection } from "@/components/home/GallerySection";
+import { HeroSection } from "@/components/home/HeroSection";
 
 // Server Component Data Fetching
 async function getHomeData() {
   await dbConnect();
   const [categories, gallery, products, memberships] = await Promise.all([
     ServiceCategory.find({ name: { $not: /Bridal Packages/i } }).lean(),
-    Gallery.find({ type: 'image' }).sort({ createdAt: -1 }).limit(7).lean(),
+    Gallery.find({}).sort({ createdAt: -1 }).limit(7).lean(),
     Product.find({}).limit(3).lean(),
     Membership.find({}).lean(), // Just to ensuring connection, mostly static
   ]);
@@ -35,6 +36,8 @@ export const metadata: Metadata = {
     canonical: '/',
   },
 };
+
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const { categories: rawCategories, gallery: rawGallery, products } = await getHomeData();
@@ -92,37 +95,7 @@ export default async function Home() {
       <main className="flex-grow">
         
         {/* HERO SECTION */}
-        <section className="relative min-h-[85svh] flex items-center justify-center bg-slate-900 text-white overflow-hidden pb-16 pt-20 md:py-0">
-          {/* Background Image Placeholder */}
-          <Image 
-            src="https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=2574&auto=format&fit=crop" 
-            alt="Mores Salon Interior" 
-            fill 
-            className="object-cover opacity-40 z-0" 
-            priority
-          />
-          <div className="absolute inset-0 bg-slate-900/40 z-0 bg-gradient-to-t from-slate-900 via-transparent to-slate-900/20"></div>
-          <div className="relative z-10 text-center px-4 max-w-4xl mx-auto space-y-6 md:space-y-8">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter bg-gradient-to-r from-amber-200 via-orange-400 to-amber-200 bg-clip-text text-transparent leading-[1.1]">
-              Elevate Your <br className="hidden md:block"/> Beauty
-            </h1>
-            <p className="text-lg md:text-2xl text-slate-200 max-w-2xl mx-auto font-light leading-relaxed">
-              Experience the pinnacle of luxury hair, skin, and wellness treatments at Mores Salon.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-6 md:pt-8 w-full px-6 sm:px-0">
-              <Link href="/services" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto rounded-full bg-white text-slate-900 hover:bg-slate-200 h-14 px-8 text-lg font-semibold">
-                  Book Appointment <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-              <Link href="/memberships" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto rounded-full border-white/30 text-white hover:bg-white/10 h-14 px-8 text-lg bg-white/5 backdrop-blur-sm">
-                  View Memberships
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
+        <HeroSection />
 
         {/* SERVICES PREVIEW */}
         {/* SERVICES PREVIEW */}
